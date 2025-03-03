@@ -10,6 +10,7 @@ npm install
 
 To run localhost use:
 ```
+cd frontend
 npm run dev
 ```
 
