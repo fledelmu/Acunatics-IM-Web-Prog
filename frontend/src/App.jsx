@@ -19,7 +19,12 @@ function App() {
           <button className="sideButton" onClick={() => setActivePage("records")}>Records</button>
           <button className="sideButton" onClick={() => setActivePage("inventory")}>Inventory</button>
         </div>
-        
+      </div>
+
+      <div className="contentContainer">
+        {activePage === "process" && <Process></Process>}
+        {activePage === "records" && <Records></Records>}
+        {activePage === "inventory" && <Inventory></Inventory>}
       </div>
     </>
   )
