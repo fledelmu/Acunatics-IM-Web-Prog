@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import {BrowserRouter, Routes, Route} from 'react-router-dom'
-import Inventory from './pages/inventory';
-import Process from './pages/process';
-import Records from './pages/records';
+import Inventory from './pages/Inventory/inventory';
+import Process from './pages/Process/process';
+import Records from './pages/Records/records';
 import placeHolder from './assets/image-placeholder.png'
 import './App.css'
 
@@ -19,7 +18,12 @@ function App() {
           <button className="sideButton" onClick={() => setActivePage("records")}>Records</button>
           <button className="sideButton" onClick={() => setActivePage("inventory")}>Inventory</button>
         </div>
-        
+      </div>
+
+      <div className="contentContainer">
+        {activePage === "process" && <Process></Process>}
+        {activePage === "records" && <Records></Records>}
+        {activePage === "inventory" && <Inventory></Inventory>}
       </div>
     </>
   )
