@@ -17,12 +17,10 @@
   top: 0;
   left: 0;
 }
-
 .sidebar img{
-  padding: 10px;
-  width: 200px; 
-  height: auto;  
-  border-radius: 10px;
+  width: 300px; 
+  height: 300px;  
+  margin-bottom: 0px;
 }
 
 .sideButtonContainer{

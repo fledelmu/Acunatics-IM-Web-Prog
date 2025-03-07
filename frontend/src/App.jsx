@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Inventory from './pages/Inventory/inventory';
 import Process from './pages/Process/process';
 import Records from './pages/Records/records';
-import placeHolder from './assets/image-placeholder.png'
+import logo from './assets/porkybest.png'
 import './App.css'
 
 function App() {
@@ -11,7 +11,7 @@ function App() {
   return (
     <>
       <div className="sidebar">
-        <img src={placeHolder} alt="Sidebar Logo"/>
+        <img src={logo} alt="Sidebar Logo" className="sidebar-img"/>
         <h1>Porky Best!</h1>
         <div className="sideButtonContainer">
           <button className="sideButton" onClick={() => setActivePage("process")}>Process</button>
