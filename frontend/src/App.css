@@ -11,7 +11,7 @@
   flex-direction: column;
   align-items: center;
   background-color: rgb(252, 54, 54);
-  width: 450px;
+  width: 40vh;
   height: 100vh; 
   position: fixed; 
   top: 0;
@@ -67,6 +67,19 @@ button{
   width: 100%; 
   background-color: rgb(240, 240, 240);
 }
+.content{
+  display: flex;
+  flex-direction: center;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  min-height: 300px;
+  width: 100%;
+  background-color: rgb(255, 255, 255);
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+  border-bottom-left-radius: 20px;
+}
 
 .tabContainer{
   display:flex;
@@ -92,17 +105,6 @@ button{
 .tab.active {
   background-color: white;
 }
-
-.content{
-  display: flex;
-  flex-direction: center;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  background-color: rgb(255, 255, 255);
-}
-
 
 .form{
   display:flex;
@@ -133,7 +135,7 @@ button{
   margin-left:30px;
 }
 
-table{
+.process-table{
   margin: 30px;
   border-collapse: collapse;
   width: 700px; 
@@ -141,12 +143,47 @@ table{
   border-spacing: 0;
   table-layout: auto;
 }
-td, th {
+.process-table td, th {
   border: 1px solid black;
-  width: 1%;
-  height: 1%;
+  width: 20px;
+  height: 20px;
   text-align: center;
+}
 
+.records-content{
+  display:grid;
+  grid-template-rows: auto 1fr;
+  gap: 0;
+  padding: 0; 
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+.records-table{
+  border-collapse: collapse;
+  width: 100%; 
+  height: 50%; 
+  border-spacing: 0;
+  table-layout: auto;
+  margin: 0;
+}
+.records-table td, th {
+  border: 1px solid black;
+  width: auto;
+  height: auto;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+}
+
+.records-combobox-container{
+  display:flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+}
+.records-combobox{
+  width: 20%;
 }
 
 @media (max-width: 768px) {

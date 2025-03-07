@@ -1,4 +1,4 @@
-import '../../App.jsx'
+import '../../App.css'
 
 export default function Stalls(){
     return (
@@ -20,7 +20,7 @@ export default function Stalls(){
             </div>
             <div className="tableContent">
                 <h2>Stalls Report</h2>
-                <table>
+                <table className="process-table">
                     <thead>
                         <tr>
                             <th>ID</th>
