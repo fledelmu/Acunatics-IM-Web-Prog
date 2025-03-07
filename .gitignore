@@ -4,3 +4,7 @@ package-lock.json
 
 # misc
 git command.txt
+
+
+#private
+.env
