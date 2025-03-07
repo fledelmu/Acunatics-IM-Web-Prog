@@ -1,4 +1,4 @@
-import '../../App.jsx'
+import '../../App.css'
 
 export default function Production(){
     return (
@@ -24,7 +24,7 @@ export default function Production(){
             </div>
             <div className="tableContent">
                 <h2>Production Report</h2>
-                <table>
+                <table className="process-table">
                     <thead>
                         <tr>
                             <th>ID</th>
