@@ -1,29 +1,46 @@
 import '../../App.css'
+import './process.css'
+import Select from 'react-select'
+import {useState} from 'react'
 
 export default function Production(){
+    const options = [
+        { value: "Material", label: "Material" }
+    ]
+
+    const [selected, setSelected] = useState(null)
+
     return (
         <div className="content">
+            <div><h2>Production Report</h2></div>
             <div className="form">
-                <div className="formInput">
-                    <label for="product"><h3>Product</h3></label>
-                    <input></input>
-                </div>
-                <div className="formInput">
-                    <label for="vat"><h3>Vat Number</h3></label>
-                    <input></input>
-                </div>
-                <div className="formInput">
-                    <label for="Sweight"><h3>Start Weight</h3></label>
-                    <input></input> 
-                </div>
-                <div className="formInput">
-                    <label for="Eweight"><h3>End Weight</h3></label>
-                    <input></input>
-                </div>
-                <button>Add</button>
+                <div><h3>Add Process:</h3></div>
+                <Select
+                className="selection"
+                options={options}
+                value={selected}
+                onChange={setSelected}
+                isClearable
+                placeholder="Product"
+                />
+                
+               
+                <Select
+                className="selection"
+                options={options}
+                value={selected}
+                onChange={setSelected}
+                isClearable
+                placeholder="Vat Number"
+                />
+                
+                <input placeholder='Enter Starting Weight'></input> 
+                
+                <input placeholder='Enter Ending Weight'></input> 
+                
+                <button className="input-button">Add</button>
             </div>
             <div className="tableContent">
-                <h2>Production Report</h2>
                 <table className="process-table">
                     <thead>
                         <tr>

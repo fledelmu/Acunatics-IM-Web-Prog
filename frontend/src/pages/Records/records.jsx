@@ -1,23 +1,18 @@
 import '../../App.css'
 import {useState} from "react"
-import Delivery from './delivery'
-import Production from './production'
-import Stalls from './stalls'
+import RecordContent from './recordContent'
 
 export default function Records(){
     const [activeTab, setActiveTab] = useState("Tab 1");
     return (
         <>  
             <div className="tabContainer">
-                <button className={`tab ${activeTab === "Tab 1" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 1")}>Production</button>
-                <button className={`tab ${activeTab === "Tab 2" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 2")}>Delivery</button>
-                <button className={`tab ${activeTab === "Tab 3" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 3")}>Stalls</button>
+                <button className="tab">Records</button>
+
             </div>
             <div>
                 <div className="content">
-                    {activeTab === "Tab 1" && <Production></Production>}
-                    {activeTab === "Tab 2" && <Delivery></Delivery>}
-                    {activeTab === "Tab 3" && <Stalls></Stalls>}
+                    {activeTab === "Tab 1" && <RecordContent></RecordContent>}
                 </div>
             </div>
         </>   
