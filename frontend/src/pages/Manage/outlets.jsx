@@ -4,7 +4,7 @@ import {useState} from 'react'
 import CreatableSelect from 'react-select/creatable'
 import Select from 'react-select'
 
-export default function Managers(){
+export default function Outlets(){
     const actions = [
         {value: "Add", label: "Add"},
         {value: "Search", label: "Search"}
@@ -21,7 +21,7 @@ export default function Managers(){
 
     return(
         <div className='content'>
-            <div><h2>Managers</h2></div>
+            <div><h2>Outlets</h2></div>
             <div className="manage-form-container">
                 <Select
                 className="selection"
@@ -37,19 +37,8 @@ export default function Managers(){
                 value={selected}
                 onChange={setSelected}
                 isClearable
-                placeholder="Name"
+                placeholder="Location"
                 />
-                {selectedAction?.value === "Add" && (
-                    <div className="manage-form-container">
-                        <label>Contact:</label>
-                        <input
-                            type="text" 
-                            value={contact} 
-                            onChange={(e) => setContact(e.target.value)} 
-                            placeholder="Enter contact"
-                        />
-                    </div>
-                )}
                 <button className="input-button">Proceed</button>
             </div>
             

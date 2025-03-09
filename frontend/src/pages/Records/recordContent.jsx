@@ -9,7 +9,6 @@ export default function RecordsProduction(){
     const sampleType = [
         { value: "Production", label: "Production" },
         { value: "Delivery", label: "Delivery" },
-        { value: "Stalls", label: "Stalls" },
         { value: "Supply", label: "Supply" }
     ]
 
@@ -34,15 +33,6 @@ export default function RecordsProduction(){
                         placeholder="Type"
                         />
                     </div>
-                    <div>
-                        <DatePicker 
-                            selected={selectedDate} 
-                            onChange={(date) => setSelectedDate(date)} 
-                            dateFormat="yyyy-MM-dd" 
-                            isClearable
-                            placeholderText="Select a date"
-                        />
-                    </div>
                     <div className="records-combobox">
                         <Select
                         options={order}
@@ -50,6 +40,16 @@ export default function RecordsProduction(){
                         onChange={setSelectedOrder}
                         isClearable
                         placeholder="Order by..."
+                        />
+                    </div>
+                    <div>
+                        <DatePicker 
+                            className="datePicker"
+                            selected={selectedDate} 
+                            onChange={(date) => setSelectedDate(date)} 
+                            dateFormat="yyyy-MM-dd" 
+                            isClearable
+                            placeholderText="Select a date"
                         />
                     </div>
                 </div>

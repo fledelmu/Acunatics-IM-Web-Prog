@@ -4,7 +4,7 @@ import {useState} from 'react'
 import CreatableSelect from 'react-select/creatable'
 import Select from 'react-select'
 
-export default function Managers(){
+export default function Employees(){
     const actions = [
         {value: "Add", label: "Add"},
         {value: "Search", label: "Search"}
@@ -21,7 +21,7 @@ export default function Managers(){
 
     return(
         <div className='content'>
-            <div><h2>Managers</h2></div>
+            <div><h2>Employees</h2></div>
             <div className="manage-form-container">
                 <Select
                 className="selection"

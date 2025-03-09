@@ -3,7 +3,6 @@
     flex-direction: row;
     border-radius: 20px;
     align-items: center;
-    justify-content: center;
     height: auto;
     width: 80%;
     margin: 0px;
@@ -22,7 +21,7 @@
 .process-table{
     margin: 15px;
     border-collapse: collapse;
-    width: 90%;
+    width: 100%;
     height: 100%;
     border-spacing: 0;
     table-layout: auto;
@@ -35,5 +34,6 @@
     text-align: center;
 }
 .process-table th{
+    border: 1px solid black;
     padding: 0px;
 }

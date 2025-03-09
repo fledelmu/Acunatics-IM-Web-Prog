@@ -1,4 +1,5 @@
 import '../../App.css'
+import './inventory.css'
 import CreatableSelect from 'react-select/creatable'
 import {useState} from 'react'
 
@@ -14,20 +15,21 @@ export default function InvStall(){
     return(
         <div className="content">
             <div><h2>Stalls Inventory</h2></div>
-            <div className="records-content">
-                <div className="records-combobox-container">
-                    <div className="records-combobox">
+            <div className="stalls-inventory-table-container">
+                <div className="inventory-form">
+                    <div>
                         <CreatableSelect
-                        options={sampleLocation}
-                        value={selectedLocation}
-                        onChange={setSelectedLocation}
-                        isClearable
-                        placeholder="Location"
+                            options={sampleLocation}
+                            value={selectedLocation}
+                            onChange={setSelectedLocation}
+                            isClearable
+                            placeholder="Location"
                         />
                     </div>
                 </div>
-                <div>
-                    <table className="records-table">
+                
+                <div className="stalls-inventory-table-container">
+                    <table className="stalls-table">
                         <thead>
                             <tr>
                                 <th>Name</th>
