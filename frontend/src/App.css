@@ -5,6 +5,9 @@
   text-align: center;
 }
 
+h1, h2{
+  margin: 0px;
+}
 /*Start of sidebar*/
 .sidebar {  
   display: flex;
@@ -86,8 +89,8 @@ button{
 .tabContainer{
   display:flex;
   margin-left: 5px;
-  max-width: 200px;
-  width: 50%;
+  max-width: 500px;
+  width: 100%;
   background-color: #ccc;
 }
 .tab {
@@ -118,13 +121,18 @@ input{
   height: 20px;
 }
 .input-button{
-  width: 50px;
-  height: 20px;
+  width: 20%;
+  height: 10%;
   text-align: center;
   border-radius: 5px;
+  padding: 5px;
   margin: 30px;
 }
 /* start of page display*/
+
+.datePicker{
+  height: 30px;
+}
 
 @media (max-width: 768px) {
   .sidebar {

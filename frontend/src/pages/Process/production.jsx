@@ -1,6 +1,6 @@
 import '../../App.css'
 import './process.css'
-import Select from 'react-select'
+import CreatableSelect from 'react-select/creatable'
 import {useState} from 'react'
 
 export default function Production(){
@@ -15,7 +15,7 @@ export default function Production(){
             <div><h2>Production Report</h2></div>
             <div className="form">
                 <div><h3>Add Process:</h3></div>
-                <Select
+                <CreatableSelect
                 className="selection"
                 options={options}
                 value={selected}
@@ -25,7 +25,7 @@ export default function Production(){
                 />
                 
                
-                <Select
+                <CreatableSelect
                 className="selection"
                 options={options}
                 value={selected}

@@ -1,16 +1,13 @@
-.form{
-    display:flex;
+.manage-form-container{
+    display: flex;
     flex-direction: row;
-    border-radius: 20px;
-    align-items: center;
-    height: auto;
-    width: 80%;
-    margin: 0px;
+    justify-content: center;
     gap: 20px;
+    align-items: center;
+    margin: 0px;
 }
-  
-  
-.tableContent {
+
+.manage-table-content{
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -18,7 +15,7 @@
     height: 100%;
     gap: 0; 
 }
-.process-table{
+.manage-table{
     margin: 15px;
     border-collapse: collapse;
     width: 100%;
@@ -26,14 +23,18 @@
     border-spacing: 0;
     table-layout: auto;
 }
-.process-table td{
+.manage-table td{
     border: none;
     border-bottom: 1px solid rgb(187, 184, 184);
     width: 20px;
     height: 10px;
     text-align: center;
 }
-.process-table th{
+.manage-table th{
     border: 1px solid black;
     padding: 0px;
+}
+
+.nameSelect{
+    width:400px;
 }

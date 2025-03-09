@@ -2,6 +2,8 @@ import '../../App.css'
 import './inventory.css'
 import {useState} from "react"
 import Select from 'react-select'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 
 export default function InvProduction(){
     const Type = [
@@ -17,6 +19,8 @@ export default function InvProduction(){
 
     const [selectedProd, setSelectedProd] = useState(null)
 
+    const [selectedDate, setSelectedDate] = useState(null)
+    
     return(
         <>
             <div className="content">
@@ -24,7 +28,6 @@ export default function InvProduction(){
                 <div className="inventory-form-container">
                     <div><h2>Production Inventory</h2></div>
                     <div className="inventory-form">
-                        <div><h3>New Entry: </h3></div>
                         <div>
                             <Select
                             className="selection"
@@ -37,7 +40,7 @@ export default function InvProduction(){
                         </div>
                         <div>
                             <label><h3>{getSelected ? (getSelected.value === 'Material' ? 'Item:' : 'Product:') : 'Item:'}</h3></label>
-                        </div>
+                        </div>  
                         <div>
                             <Select
                             className="selection"
@@ -48,13 +51,16 @@ export default function InvProduction(){
                             placeholder= {getSelected ? (getSelected.value === 'Material' ? 'Item' : 'Product') : 'Item'}
                             />
                         </div>
+                        <div>Select Date:</div>
                         <div>
-                            <label><h3>Quantity:</h3></label>
+                            <DatePicker 
+                            selected={selectedDate} 
+                            onChange={(date) => setSelectedDate(date)} 
+                            dateFormat="yyyy-MM-dd" 
+                            isClearable
+                            placeholderText="Select a date"
+                            />
                         </div>
-                        <div>
-                            <input placeholder='Enter quantity'></input>
-                        </div>
-                        
                     </div>
                     
                 </div>

@@ -1,6 +1,6 @@
 import '../../App.css'
 import './process.css'
-import Select from 'react-select'
+import CreatableSelect from 'react-select/creatable'
 import {useState} from 'react'
 
 export default function Stalls(){
@@ -16,7 +16,7 @@ export default function Stalls(){
             <div className="form">
                 <div><h3>Add Process:</h3></div>
                 <div className="formInput">
-                    <Select
+                    <CreatableSelect
                     className="selection"
                     options={options}
                     value={selected}
@@ -26,7 +26,7 @@ export default function Stalls(){
                     />
                 </div>
                 <div className="formInput">
-                    <Select
+                    <CreatableSelect
                     className="selection"
                     options={options}
                     value={selected}
