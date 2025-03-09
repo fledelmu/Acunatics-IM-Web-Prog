@@ -1,6 +1,6 @@
 import '../../App.css'
 import {useState} from "react"
-import Select from 'react-select'
+import CreatableSelect from 'react-select/creatable'
 
 export default function Supply(){
     const options = [
@@ -23,7 +23,7 @@ export default function Supply(){
             <div className="form">
                 <div><h3>Add Process:</h3></div>
                 <div className="formInput">
-                    <Select
+                    <CreatableSelect
                     className="selection"
                     options={options}
                     value={selected}
@@ -39,7 +39,7 @@ export default function Supply(){
                     <input placeholder="price"></input>
                 </div>
                 <div className="formInput">
-                    <Select
+                    <CreatableSelect
                     className="selection"
                     options={units}
                     value={selectedUnit}

@@ -1,5 +1,5 @@
 import '../../App.css'
-import Select from 'react-select'
+import CreatableSelect from 'react-select/creatable'
 import {useState} from 'react'
 
 export default function InvStall(){
@@ -17,7 +17,7 @@ export default function InvStall(){
             <div className="records-content">
                 <div className="records-combobox-container">
                     <div className="records-combobox">
-                        <Select
+                        <CreatableSelect
                         options={sampleLocation}
                         value={selectedLocation}
                         onChange={setSelectedLocation}

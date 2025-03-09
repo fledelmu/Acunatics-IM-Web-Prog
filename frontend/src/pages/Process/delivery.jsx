@@ -1,7 +1,7 @@
 import '../../App.css'
 import './process.css'
 import {useState} from 'react'
-import Select from 'react-select'
+import CreatableSelect from 'react-select/creatable'
 
 export default function Delivery(){
     const options = [
@@ -16,7 +16,7 @@ export default function Delivery(){
             <div className="form">
                 <div><h3>Add Process:</h3></div>
                 <div className="formInput">
-                        <Select
+                        <CreatableSelect
                         className="selection"
                         options={options}
                         value={selected}
@@ -26,7 +26,7 @@ export default function Delivery(){
                         />
                     </div>
                     <div className="formInput">
-                        <Select
+                        <CreatableSelect
                         className="selection"
                         options={options}
                         value={selected}
