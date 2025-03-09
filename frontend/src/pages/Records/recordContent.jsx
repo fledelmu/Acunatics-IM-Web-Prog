@@ -1,15 +1,29 @@
 import '../../App.css'
+import './records.css'
 import Select from 'react-select'
 import {useState} from 'react'
 
-export default function RecordsStalls(){
-    const sampleOptions = [
-        { value: "john_doe", label: "John Doe" },
-        { value: "jane_smith", label: "Jane Smith" },
-        { value: "alice_johnson", label: "Alice Johnson" }
-    ];
+export default function RecordsProduction(){
+    const sampleType = [
+        { value: "Production", label: "Production" },
+        { value: "Delivery", label: "Delivery" },
+        { value: "Stalls", label: "Stalls" },
+        { value: "Supply", label: "Supply" }
+    ]
     
-    const [selectedOption, setSelectedOption] = useState(null);
+    const sampleTerms = [
+        { value: "Daily", label: "Daily" },
+        { value: "Weekly", label: "Weekly" },
+        { value: "Monthly", label: "Monthly" }
+    ]
+
+    const order = [
+        { value: "Ascending", label: "Ascending" },
+        { value: "Descending", label: "Descending" },
+    ]
+    const [selectedType, setSelectedType] = useState(null);
+    const [selectedTerm, setSelectedTerm] = useState(null);
+    const [selectedOrder, setSelectedOrder] = useState(null);
 
     return(
         <div className="content">
@@ -17,20 +31,29 @@ export default function RecordsStalls(){
                 <div className="records-combobox-container">
                     <div className="records-combobox">
                         <Select
-                        options={sampleOptions}
-                        value={selectedOption}
-                        onChange={setSelectedOption}
+                        options={sampleType}
+                        value={selectedType}
+                        onChange={setSelectedType}
                         isClearable
-                        placeholder="Choose a name..."
+                        placeholder="Type"
                         />
                     </div>
                     <div className="records-combobox">
                         <Select
-                        options={sampleOptions}
-                        value={selectedOption}
-                        onChange={setSelectedOption}
+                        options={sampleTerms}
+                        value={selectedTerm}
+                        onChange={setSelectedTerm}
                         isClearable
-                        placeholder="Choose a name..."
+                        placeholder="Term"
+                        />
+                    </div>
+                    <div className="records-combobox">
+                        <Select
+                        options={order}
+                        value={selectedOrder}
+                        onChange={setSelectedOrder}
+                        isClearable
+                        placeholder="Order by..."
                         />
                     </div>
                 </div>
