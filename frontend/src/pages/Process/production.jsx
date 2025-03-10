@@ -2,14 +2,43 @@ import '../../App.css'
 import './process.css'
 import CreatableSelect from 'react-select/creatable'
 import {useState} from 'react'
+import { processProduction, fetchRecords } from '../../utils/api'
 
 export default function Production(){
     const options = [
-        { value: "Material", label: "Material" }
+        { value: "1", label: "1" },
+        { value: "2", label: "2" },
+        { value: "3", label: "3" },
+        { value: "4", label: "4" },
+        { value: "5", label: "5" }
     ]
 
     const [selected, setSelected] = useState(null)
 
+    const addProduction = async () => {
+        console.log(clicked);
+
+        if (!selected || !totalWeight || !startWeight || !endWeight) {
+            alert("Please fill in all fields");
+            return;
+        }
+
+        const vat = selected.value; 
+        const data = {
+            vat,
+            total_weight: totalWeight,
+            start_weight: startWeight,
+            end_weight: endWeight,
+        };
+
+        try{
+            let data = []
+
+
+        } catch (error) {
+
+        }
+    }
     return (
         <div className="content">
             <div><h2>Production Report</h2></div>
