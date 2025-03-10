@@ -19,18 +19,18 @@ app.get("/api/production-records", async (req, res) => {
   const sortOrder = order.toUpperCase() === "DESC" ? "DESC" : "ASC"; 
 
   try {
-    const [productionRecords] = await db.query(`
+    const [productionRecords] = await db.query(` 
       SELECT 
-        b.id AS batch_id, 
+        b.batch_id AS batch_id, 
         b.vat_num, 
         bd.weight AS total_weight, 
         a.weight AS starting_weight, 
         af.weight AS final_weight, 
         b.date
       FROM batch b
-      JOIN batch_details bd ON b.id = bd.batch_id
-      JOIN antala a ON b.id = a.batch_id
-      JOIN antala_final af ON b.id = af.batch_id
+      JOIN batch_details bd ON b.batch_id = bd.batch_id
+      JOIN antala a ON bd.batch_details_id = a.batch_details_id
+      JOIN antala_final af ON a.antala_id = af.antala_id
       ORDER BY b.date ${sortOrder}
     `);
     res.json(productionRecords);
@@ -47,15 +47,15 @@ app.get("/api/delivery-records", async (req, res) => {
   try {
     const [deliveryRecords] = await db.query(`
       SELECT 
-        d.client_id, 
+        d.delivery_id, 
         c.name AS client_name, 
         d.location, 
         d.date, 
         od.quantity, 
         od.subtotal
       FROM delivery d
-      JOIN client c ON d.client_id = c.id
-      JOIN order_details od ON d.id = od.delivery_id
+      JOIN client c ON d.delivery_id = c.client_id
+      JOIN order_details od ON d.delivery_id = od.order_id
       ORDER BY d.date ${sortOrder}
     `);
     res.json(deliveryRecords);
@@ -72,15 +72,15 @@ app.get("/api/supply-records", async (req, res) => {
   try {
     const [supplyRecords] = await db.query(`
       SELECT 
-        s.id, 
+        s.supply_id, 
         sp.name AS supplier_name, 
         s.date, 
         sd.unit, 
         sd.quantity, 
         sd.price
       FROM supply s
-      JOIN suppliers sp ON s.supplier_id = sp.id
-      JOIN supply_details sd ON s.id = sd.supply_id
+      JOIN supplier sp ON s.supplier_id = sp.supplier_id
+      JOIN supply_details sd ON s.supply_id = sd.supply_id
       ORDER BY s.date ${sortOrder}
     `);
     res.json(supplyRecords);
