@@ -8,22 +8,30 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-//test ra ni if mag kuha siya sa cloud na database
-app.get("/users", async (req, res) => {
+app.get("/api/records", async (req, res) => {
   try {
-    const [users] = await db.query("SELECT * FROM sales"); 
-    res.json(users);
+    const [productionRecords] = await db.query("SELECT * FROM production");
+    const [deliveryRecords] = await db.query("SELECT * FROM delivery");
+    const [supplyRecords] = await db.query("SELECT * FROM supply");
+
+    res.json({
+      production: productionRecords,
+      delivery: deliveryRecords,
+      supply: supplyRecords
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
-app.get("/", (req, res) => {
-  res.send("Backend is running!");
 });
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+app.get("/", (req, res) => {
+  res.send("Backend is running!");
+});
+
+
 
 
 
