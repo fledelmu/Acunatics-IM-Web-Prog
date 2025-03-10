@@ -15,15 +15,6 @@ export default function Production(){
             <div><h2>Production Report</h2></div>
             <div className="form">
                 <div><h3>Add Process:</h3></div>
-                <CreatableSelect
-                className="selection"
-                options={options}
-                value={selected}
-                onChange={setSelected}
-                isClearable
-                placeholder="Product"
-                />
-                
                
                 <CreatableSelect
                 className="selection"
@@ -34,9 +25,11 @@ export default function Production(){
                 placeholder="Vat Number"
                 />
                 
-                <input placeholder='Enter Starting Weight'></input> 
+                <input placeholder='Enter total weight...'></input> 
+
+                <input placeholder='Enter starting weight...'></input> 
                 
-                <input placeholder='Enter Ending Weight'></input> 
+                <input placeholder='Enter ending weight...'></input> 
                 
                 <button className="input-button">Add</button>
             </div>

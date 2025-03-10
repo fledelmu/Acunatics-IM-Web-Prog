@@ -52,6 +52,9 @@ export default function RecordsProduction(){
                             placeholderText="Select a date"
                         />
                     </div>
+                    <div>
+                        <button className="input-button">Proceed</button>
+                    </div>
                 </div>
                 <div>
                     <table className="records-table">
