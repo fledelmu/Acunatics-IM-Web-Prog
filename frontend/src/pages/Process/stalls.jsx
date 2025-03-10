@@ -1,25 +1,46 @@
 import '../../App.css'
+import './process.css'
+import CreatableSelect from 'react-select/creatable'
+import {useState} from 'react'
 
 export default function Stalls(){
+    const options = [
+        { value: "Material", label: "Material" }
+    ]
+
+    const [selected, setSelected] = useState(null)
+
     return (
         <div className="content">
+            <div><h2>Stalls Report</h2></div>
             <div className="form">
+                <div><h3>Add Process:</h3></div>
                 <div className="formInput">
-                    <label for="outlet"><h3>Outlet</h3></label>
-                    <input></input>
+                    <CreatableSelect
+                    className="selection"
+                    options={options}
+                    value={selected}
+                    onChange={setSelected}
+                    isClearable
+                    placeholder="Outlet"
+                    />
                 </div>
                 <div className="formInput">
-                    <label for="product"><h3>Product</h3></label>
-                    <input></input>
+                    <CreatableSelect
+                    className="selection"
+                    options={options}
+                    value={selected}
+                    onChange={setSelected}
+                    isClearable
+                    placeholder="Product"
+                    />
                 </div>
                 <div className="formInput">
-                    <label for="TDelivery"><h3>Total Delivery</h3></label>
-                    <input></input> 
+                    <input placeholder="Enter Total Delivery"></input> 
                 </div>
-                <button>Add</button>
+                <button className="input-button">Add</button>
             </div>
             <div className="tableContent">
-                <h2>Stalls Report</h2>
                 <table className="process-table">
                     <thead>
                         <tr>

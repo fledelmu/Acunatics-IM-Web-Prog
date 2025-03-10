@@ -1,47 +1,49 @@
 import '../../App.css'
-import './process.css'
-import CreatableSelect from 'react-select/creatable'
+import './manage.css'
 import {useState} from 'react'
+import CreatableSelect from 'react-select/creatable'
+import Select from 'react-select'
 
-export default function Production(){
+export default function Outlets(){
+    const actions = [
+        {value: "Add", label: "Add"},
+        {value: "Search", label: "Search"}
+    ]
     const options = [
-        { value: "Material", label: "Material" }
+        {value: "Manager 1", label: "Manager 1"}
     ]
 
     const [selected, setSelected] = useState(null)
 
-    return (
-        <div className="content">
-            <div><h2>Production Report</h2></div>
-            <div className="form">
-                <div><h3>Add Process:</h3></div>
-                <CreatableSelect
+    const [selectedAction, setSelectedAction] = useState("Search")
+
+    const [contact, setContact] = useState("")
+
+    return(
+        <div className='content'>
+            <div><h2>Outlets</h2></div>
+            <div className="manage-form-container">
+                <Select
                 className="selection"
+                options={actions}
+                value={selectedAction}
+                onChange={(value) => setSelectedAction(value)}
+                isClearable
+                placeholder="Select action..."
+                />
+                <CreatableSelect
+                className="nameSelect"
                 options={options}
                 value={selected}
                 onChange={setSelected}
                 isClearable
-                placeholder="Product"
+                placeholder="Location"
                 />
-                
-               
-                <CreatableSelect
-                className="selection"
-                options={options}
-                value={selected}
-                onChange={setSelected}
-                isClearable
-                placeholder="Vat Number"
-                />
-                
-                <input placeholder='Enter Starting Weight'></input> 
-                
-                <input placeholder='Enter Ending Weight'></input> 
-                
-                <button className="input-button">Add</button>
+                <button className="input-button">Proceed</button>
             </div>
-            <div className="tableContent">
-                <table className="process-table">
+            
+            <div className="manage-table-content">
+                <table className="manage-table">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -73,5 +75,6 @@ export default function Production(){
                 </table>
             </div>
         </div>
+      
     )
 }

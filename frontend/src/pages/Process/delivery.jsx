@@ -1,29 +1,50 @@
 import '../../App.css'
+import './process.css'
+import {useState} from 'react'
+import CreatableSelect from 'react-select/creatable'
 
 export default function Delivery(){
+    const options = [
+        { value: "Material", label: "Material" }
+    ]
+
+    const [selected, setSelected] = useState(null)
+    
     return (
         <div className="content">
+            <div><h2>Deliver Report</h2></div>
             <div className="form">
+                <div><h3>Add Process:</h3></div>
                 <div className="formInput">
-                    <label for="location"><h3>Location</h3></label>
-                    <input></input>
-                </div>
-                <div className="formInput">
-                    <label for="product"><h3>Product</h3></label>
-                    <input></input>
-                </div>
-                <div className="formInput">
-                    <label for="TDelivery"><h3>Total Delivery</h3></label>
-                    <input></input> 
-                </div>
-                <div className="formInput">
-                    <label for="Treturn"><h3>Total Return</h3></label>
-                    <input></input>
-                </div>
-                <button>Add</button>
+                        <CreatableSelect
+                        className="selection"
+                        options={options}
+                        value={selected}
+                        onChange={setSelected}
+                        isClearable
+                        placeholder="Location"
+                        />
+                    </div>
+                    <div className="formInput">
+                        <CreatableSelect
+                        className="selection"
+                        options={options}
+                        value={selected}
+                        onChange={setSelected}
+                        isClearable
+                        placeholder="Product"
+                        />
+                    </div>
+                    <div className="formInput">
+                        <input placeholder="Enter Total Delivery"></input> 
+                    </div>
+                    <div className="formInput">
+                        <input placeholder="Enter Total Return"></input>
+                    </div>
+                <button className="input-button">Add</button>
             </div>
+            
             <div className="tableContent">
-                <h2>Delivery Report</h2>
                 <table className="process-table">
                     <thead>
                         <tr>

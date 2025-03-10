@@ -3,16 +3,22 @@ import cors from "cors";
 import db from "./db.js";
 
 const app = express();
-const PORT = process.env.DB_PORT;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
-// Test route to fetch data
-app.get("/users", async (req, res) => {
+app.get("/api/records", async (req, res) => {
   try {
-    const [users] = await db.query("SELECT * FROM tbl_pet"); 
-    res.json(users);
+    const [productionRecords] = await db.query("SELECT * FROM production");
+    const [deliveryRecords] = await db.query("SELECT * FROM delivery");
+    const [supplyRecords] = await db.query("SELECT * FROM supply");
+
+    res.json({
+      production: productionRecords,
+      delivery: deliveryRecords,
+      supply: supplyRecords
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -21,6 +27,11 @@ app.get("/users", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+app.get("/", (req, res) => {
+  res.send("Backend is running!");
+});
+
+
 
 
 

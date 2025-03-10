@@ -1,36 +1,55 @@
 import '../../App.css'
+import './records.css'
 import Select from 'react-select'
 import {useState} from 'react'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 
-export default function RecordsStalls(){
-    const sampleOptions = [
-        { value: "john_doe", label: "John Doe" },
-        { value: "jane_smith", label: "Jane Smith" },
-        { value: "alice_johnson", label: "Alice Johnson" }
-    ];
+export default function RecordsProduction(){
+    const sampleType = [
+        { value: "Production", label: "Production" },
+        { value: "Delivery", label: "Delivery" },
+        { value: "Supply", label: "Supply" }
+    ]
+
+    const order = [
+        { value: "Ascending", label: "Ascending" },
+        { value: "Descending", label: "Descending" },
+    ]
+    const [selectedType, setSelectedType] = useState(null)
+    const [selectedOrder, setSelectedOrder] = useState(null)
+    const [selectedDate, setSelectedDate] = useState(null)
     
-    const [selectedOption, setSelectedOption] = useState(null);
-
     return(
         <div className="content">
             <div className="records-content">
                 <div className="records-combobox-container">
                     <div className="records-combobox">
                         <Select
-                        options={sampleOptions}
-                        value={selectedOption}
-                        onChange={setSelectedOption}
+                        options={sampleType}
+                        value={selectedType}
+                        onChange={setSelectedType}
                         isClearable
-                        placeholder="Choose a name..."
+                        placeholder="Type"
                         />
                     </div>
                     <div className="records-combobox">
                         <Select
-                        options={sampleOptions}
-                        value={selectedOption}
-                        onChange={setSelectedOption}
+                        options={order}
+                        value={selectedOrder}
+                        onChange={setSelectedOrder}
                         isClearable
-                        placeholder="Choose a name..."
+                        placeholder="Order by..."
+                        />
+                    </div>
+                    <div>
+                        <DatePicker 
+                            className="datePicker"
+                            selected={selectedDate} 
+                            onChange={(date) => setSelectedDate(date)} 
+                            dateFormat="yyyy-MM-dd" 
+                            isClearable
+                            placeholderText="Select a date"
                         />
                     </div>
                 </div>
