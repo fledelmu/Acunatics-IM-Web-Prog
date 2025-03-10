@@ -14,13 +14,8 @@ export default function RecordsProduction(){
         { value: "Supply", label: "Supply" }
     ]
 
-    const order = [
-        { value: "Ascending", label: "Ascending" },
-        { value: "Descending", label: "Descending" },
-    ]
-
     const [selectedType, setSelectedType] = useState(null)
-    const [selectedOrder, setSelectedOrder] = useState(null)
+
     const [selectedDate, setSelectedDate] = useState(null)
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
@@ -29,8 +24,23 @@ export default function RecordsProduction(){
         console.log("clicked");
 
         try {
-            const data = await fetchRecords()
-            console.log("Fetched data:", data)
+
+            let data = []
+
+            if(selectedType.value === 'Production'){
+                data = await fetchRecords('production-records')
+                console.log("Fetched data:", data)
+            }
+            
+            if(selectedType === 'Delivery'){
+                data = await fetchRecords('delivery-records')
+                console.log("Fetched data:", data)
+            }
+
+            if(selectedType === 'Supply'){
+                data = await fetchRecords('supply-records')
+                console.log("Fetched data:", data)
+            }
 
             if (!data || data.length === 0) {
                 setColumns([])
@@ -57,15 +67,6 @@ export default function RecordsProduction(){
                         onChange={setSelectedType}
                         isClearable
                         placeholder="Type"
-                        />
-                    </div>
-                    <div className="records-combobox">
-                        <Select
-                        options={order}
-                        value={selectedOrder}
-                        onChange={setSelectedOrder}
-                        isClearable
-                        placeholder="Order by..."
                         />
                     </div>
                     <div>
