@@ -4,11 +4,11 @@ import Select from 'react-select'
 import {useState} from 'react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import {getProduction} from '../../utils/api'
+import {fetchRecords} from '../../utils/api'
 
 
 export default function RecordsProduction(){
-    const sampleType = [
+    const type = [
         { value: "Production", label: "Production" },
         { value: "Delivery", label: "Delivery" },
         { value: "Supply", label: "Supply" }
@@ -25,27 +25,34 @@ export default function RecordsProduction(){
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
 
-    const fetchRecords = async () => {
-        const order = selectedOrder ? selectedOrder.value : "ASC"
-        const data = await getProduction(order)
-        
-        
-        if (data.length > 0) {
+    const fetchInfo = async () => {
+        console.log("clicked");
+
+        try {
+            const data = await fetchRecords()
+            console.log("Fetched data:", data)
+
+            if (!data || data.length === 0) {
+                setColumns([])
+                setRecords([])
+                return
+            }
+
             setColumns(Object.keys(data[0]))
-        } else {
+            setRecords(data)
+        } catch (error) {
+            console.error("Fetching error:", error)
             setColumns([])
+            setRecords([])
         }
-
-        setRecords(data);
-    };
-
+    }
     return(
         <div className="content">
             <div className="records-content">
                 <div className="records-combobox-container">
                     <div className="records-combobox">
                         <Select
-                        options={sampleType}
+                        options={type}
                         value={selectedType}
                         onChange={setSelectedType}
                         isClearable
@@ -72,11 +79,11 @@ export default function RecordsProduction(){
                         />
                     </div>
                     <div>
-                        <button className="input-button" onClick={fetchRecords}>Proceed</button>
+                        <button className="input-button" onClick={fetchInfo}>Proceed</button>
                     </div>
                 </div>
                 <div>
-                <table className="records-table">
+                    <table className="records-table">
                         <thead>
                             <tr>
                                 {columns.map((column, index) => (
