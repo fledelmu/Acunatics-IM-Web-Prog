@@ -54,7 +54,7 @@ export default function InvProduction(){
                         <div>
                             <input placeholder='Enter quantity'></input>
                         </div>
-                        <button>Add</button>
+                        <button className="input-button">Add</button>
                     </div>
                     
                 </div>

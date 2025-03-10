@@ -4,6 +4,8 @@ import Select from 'react-select'
 import {useState} from 'react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
+import {getProduction} from '../../utils/api'
+
 
 export default function RecordsProduction(){
     const sampleType = [
@@ -16,10 +18,27 @@ export default function RecordsProduction(){
         { value: "Ascending", label: "Ascending" },
         { value: "Descending", label: "Descending" },
     ]
+
     const [selectedType, setSelectedType] = useState(null)
     const [selectedOrder, setSelectedOrder] = useState(null)
     const [selectedDate, setSelectedDate] = useState(null)
-    
+    const [records, setRecords] = useState([])
+    const [columns, setColumns] = useState([])
+
+    const fetchRecords = async () => {
+        const order = selectedOrder ? selectedOrder.value : "ASC"
+        const data = await getProduction(order)
+        
+        
+        if (data.length > 0) {
+            setColumns(Object.keys(data[0]))
+        } else {
+            setColumns([])
+        }
+
+        setRecords(data);
+    };
+
     return(
         <div className="content">
             <div className="records-content">
@@ -52,54 +71,33 @@ export default function RecordsProduction(){
                             placeholderText="Select a date"
                         />
                     </div>
+                    <div>
+                        <button className="input-button" onClick={fetchRecords}>Proceed</button>
+                    </div>
                 </div>
                 <div>
-                    <table className="records-table">
+                <table className="records-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Age</th>
-                                <th>Gender</th>
-                                <th>Department</th>
-                                <th>Email</th>
+                                {columns.map((column, index) => (
+                                    <th key={index}>{column.replace(/_/g, ' ')}</th> 
+                                ))}
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>John Doe</td>
-                                <td>30</td>
-                                <td>Male</td>
-                                <td>IT</td>
-                                <td>john.doe@example.com</td>
-                            </tr>
-                            <tr>
-                                <td>Jane Smith</td>
-                                <td>27</td>
-                                <td>Female</td>
-                                <td>HR</td>
-                                <td>jane.smith@example.com</td>
-                            </tr>
-                            <tr>
-                                <td>Alice Johnson</td>
-                                <td>35</td>
-                                <td>Female</td>
-                                <td>Finance</td>
-                                <td>alice.johnson@example.com</td>
-                            </tr>
-                            <tr>
-                                <td>Michael Brown</td>
-                                <td>40</td>
-                                <td>Male</td>
-                                <td>Marketing</td>
-                                <td>michael.brown@example.com</td>
-                            </tr>
-                            <tr>
-                                <td>Robert Wilson</td>
-                                <td>29</td>
-                                <td>Male</td>
-                                <td>Sales</td>
-                                <td>robert.wilson@example.com</td>
-                            </tr>
+                            {records.length > 0 ? (
+                                records.map((record, index) => (
+                                    <tr key={index}>
+                                        {columns.map((column, colIndex) => (
+                                            <td key={colIndex}>{record[column]}</td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={columns.length || 1}>No records found</td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
