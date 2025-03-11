@@ -1,19 +1,14 @@
 import '../../App.css'
 import './manage.css'
-import {useState} from 'react'
-import CreatableSelect from 'react-select/creatable'
+import {useState, useEffect} from 'react'
 import Select from 'react-select'
+import { fetchSuppliers, addSuppliers, searchSuppliers } from '../../utils/api'
 
-export default function SupplierS(){
+export default function Suppliers(){
     const actions = [
         {value: "Add", label: "Add"},
         {value: "Search", label: "Search"}
     ]
-    const options = [
-        {value: "Manager 131231dsa", label: "Manager 1123123213"}
-    ]
-
-    const [selected, setSelected] = useState(null)
 
     const [selectedAction, setSelectedAction] = useState("Search")
 
@@ -23,6 +18,24 @@ export default function SupplierS(){
 
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
+
+    useEffect(() => {
+            async function loadSuppliers() {
+                let table = []
+                table = await fetchSuppliers()
+                if (table.length > 0) { 
+                    setRecords(table)
+                    setColumns(Object.keys(table[0]))
+                } else {
+                    setRecords([])
+                    setColumns([])
+                }
+            }
+            loadSuppliers()
+        }, [])
+    
+
+    
 
     return(
         <div className='content'>
