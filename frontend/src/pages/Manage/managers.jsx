@@ -40,7 +40,7 @@ export default function Managers(){
                 placeholder="Name"
                 />
                 {selectedAction?.value === "Add" && (
-                    <div className="manage-form-container">
+                    <div>
                         <label>Contact:</label>
                         <input
                             type="text" 
@@ -82,6 +82,59 @@ export default function Managers(){
                             <td>8</td>
                             <td>10</td>
                         </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>Pork</td>
+                            <td>10</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Beef</td>
+                            <td>5</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Chicken</td>
+                            <td>8</td>
+                            <td>10</td>
+                        </tr><tr>
+                            <td>1</td>
+                            <td>Pork</td>
+                            <td>10</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Beef</td>
+                            <td>5</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Chicken</td>
+                            <td>8</td>
+                            <td>10</td>
+                        </tr><tr>
+                            <td>1</td>
+                            <td>Pork</td>
+                            <td>10</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Beef</td>
+                            <td>5</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Chicken</td>
+                            <td>8</td>
+                            <td>10</td>
+                        </tr>
+                        
                     </tbody>
                 </table>
             </div>

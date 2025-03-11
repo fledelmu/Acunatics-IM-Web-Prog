@@ -8,7 +8,7 @@
             { value: "Material", label: "Material" }
         ]
 
-        const type = [
+        const typeOptions = [
             { value: "Outlet", label: "Outlet" },
             { value: "Client", label: "Client" }
         ]
@@ -16,10 +16,23 @@
         const [selected, setSelected] = useState(null)
         
         const [selectedType, setSelectedType] = useState(null)
-
+        
         const [records, setRecords] = useState([])
         const [columns, setColumns] = useState([])
-    
+        
+        const addDelivery = async () => {
+            console.log('clicked')
+            
+            const type = selectedType.value
+
+            const data = {
+                type,
+                target: target,
+                location: location,
+                date: date,
+                order_items: order_items
+            }
+        }
         return (
             <div className="content">
                 <div><h2>Delivery Report</h2></div>
@@ -28,7 +41,7 @@
                         
                             <CreatableSelect
                             className="selection"
-                            options={type}
+                            options={typeOptions}
                             value={selectedType}
                             onChange={setSelectedType}
                             isClearable
