@@ -217,8 +217,54 @@ app.listen(PORT, () => {
 
 
 //Manage - Managers
+
 //Manage - Suppliers
 //Manage - Employees
 //Manage - Outlets
 //Manage - Products
 //Manage - Items
+//Inventory - Stalls Inventory
+app.get("/api/inventory-stalls-inventory", async (req, res) => {
+  const { location } = req.query;
+
+  // Log the received location parameter
+  console.log("Received location:", location);
+
+  // Check if location is provided
+  if (!location) {
+    return res.status(400).json({ message: "Location is required" });
+  }
+
+  try {
+    // Query to find branch ID based on location
+    const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [location]);
+    if (branchResult.length === 0) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+
+    const branchId = branchResult[0].branch_id;
+
+    // Query to fetch inventory data for the found branch ID
+    const [inventoryResult] = await db.query(`
+      SELECT 
+        bi.inventory_id, 
+        bi.order_id, 
+        bi.date, 
+        bp.product_id, 
+        bp.quantity, 
+        bp.price 
+      FROM branch_inventory bi
+      JOIN branch_product bp ON bi.inventory_id = bp.inventory_id
+      WHERE bi.branch_id = ?
+    `, [branchId]);
+
+    // Respond with the inventory data
+    res.json(inventoryResult);
+  } catch (error) {
+    console.error("Error fetching stalls inventory:", error);
+    res.status(500).json({ message: "Error fetching stalls inventory", error: error.message });
+  }
+});
+
+//Inventory - view - production - invetory
+app.get()
