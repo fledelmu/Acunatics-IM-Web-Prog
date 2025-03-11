@@ -1,13 +1,12 @@
 .form{
     display:flex;
     flex-direction: row;
-    border-radius: 20px;
     align-items: center;
+    justify-content: center;
     height: auto;
     width: 100%;
-    max-width:1000px;
     margin: 0px;
-    gap: 30px;
+    gap: 10px;
 }
   
   

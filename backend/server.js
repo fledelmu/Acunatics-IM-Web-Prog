@@ -51,7 +51,8 @@ app.post("/api/process-production", async (req, res) =>{
     res.status(500).json({ message: "Error inserting records", error: error.message })
   }
 })
-// Process - Delivery (wa pa nahuman)
+
+// Process - Delivery
 app.post("/api/process-delivery", async (req, res) => {
   const { client_name, location, order_items } = req.body;
   const now = new Date().toISOString();
