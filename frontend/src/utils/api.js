@@ -41,6 +41,7 @@ export const fetchRecords = async (type) =>{
 }
 
 // Manage Tabs
+// Manage/Managers tab
 export const addManager = async (data) => {
     try{
         const response = await axios.post(`${URL}/api/add-manager`, data)
@@ -74,5 +75,43 @@ export const fetchManagers = async () => {
     } catch (error) {
         console.error("Error fetching managers!", error)
         return []
+    }
+}
+
+// Manage/Suppliers tab
+
+export const fetchSuppliers = async () => {
+    try{
+        const response = await axios.get(`${URL}/api/manage-get-suppliers`)
+
+        return response.data
+    } catch (error) {
+        console.error("Trouble retrieving suppliers!", error)
+        return []
+    }
+}
+
+export const searchSuppliers = async (data) => {
+    try{
+        const response = await axios.get(`${URL}/api/manage-search-suppliers`, {
+            params: { name: data.name }
+        });
+
+        return response.data
+    } catch (error) {
+        console.error("Trouble searching suppliers!", error)
+        return []
+    }
+}
+
+export const addSuppliers = async (data) => {
+    try{
+        const response = await axios.post(`${URL}/api/manage-add-suppliers`, data)
+        console.log("Response received", response)
+
+        return response.data
+    } catch (error) {
+        console.error("Error processing suppliers:", error);
+        return { success: false, message: "Error processing suppliers" }
     }
 }
