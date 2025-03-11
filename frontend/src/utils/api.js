@@ -1,17 +1,11 @@
 import axios from 'axios'
-import {useState, useEffect} from 'react'
 
 const URL = "http://localhost:5000"
 
 // Production Tab
-export const processProduction = async (vat, total_weight, start_weight, end_weight) =>{
+export const processProduction = async (data) =>{
     try{
-        const response = await axios.post(`${URL}/api/process-production`,{
-            vat, 
-            total_weight, 
-            start_weight, 
-            end_weight
-        })
+        const response = await axios.post(`${URL}/api/process-production`, data)
 
         return response.data
     } catch(error){
