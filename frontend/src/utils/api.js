@@ -10,7 +10,18 @@ export const processProduction = async (data) =>{
         return response.data
     } catch(error){
         console.error("Error processing production:", error)
-        return { success: false, message: "Error processing production" };
+        return { success: false, message: "Error processing production" }
+    }
+}
+
+export const processDelivery = async (data) => {
+    try{
+        const response = await axios.post(`${URL}/api/process-delivery`)
+
+        return response.data
+    } catch(error){
+        console.error("Error processing delivery:", error)
+        return { success: false, message: "Error processing delivery" }
     }
 }
 
