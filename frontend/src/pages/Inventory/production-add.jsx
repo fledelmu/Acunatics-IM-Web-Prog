@@ -4,11 +4,6 @@ import {useState} from "react"
 import CreatableSelect from 'react-select/creatable'
 
 export default function InvProduction(){
-    const Type = [
-        { value: "Material", label: "Material" },
-        { value: "Product", label: "Product" },
-    ]
-
     const [getSelected, setSelected] = useState(null)
 
     const product = [
@@ -24,19 +19,10 @@ export default function InvProduction(){
                 <div className="inventory-form-container">
                     <div><h2>Production Inventory</h2></div>
                     <div className="inventory-form">
-                        <div><h3>New Entry: </h3></div>
+                        <div><h3>New Entry</h3></div>
+
                         <div>
-                            <CreatableSelect
-                            className="selection"
-                            options={Type} 
-                            value={getSelected}
-                            onChange={setSelected}
-                            isClearable
-                            placeholder="Type"
-                            />
-                        </div>
-                        <div>
-                            <label><h3>{getSelected ? (getSelected.value === 'Material' ? 'Item:' : 'Product:') : 'Item:'}</h3></label>
+                            <label><h3>Product:</h3></label>
                         </div>
                         <div>
                             <CreatableSelect
@@ -45,7 +31,7 @@ export default function InvProduction(){
                             value={selectedProd}
                             onChange={setSelectedProd}
                             isClearable
-                            placeholder= {getSelected ? (getSelected.value === 'Material' ? 'Item' : 'Product') : 'Item'}
+                            placeholder= "Product"
                             />
                         </div>
                         <div>

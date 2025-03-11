@@ -1,7 +1,7 @@
 import '../../App.css'
 import './process.css'
 import CreatableSelect from 'react-select/creatable'
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
 import { processProduction, fetchRecords } from '../../utils/api'
 
 export default function Production(){
@@ -20,6 +20,16 @@ export default function Production(){
 
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
+
+    useEffect(() => {
+        async function loadProduction() {
+            let table = []
+            table = await fetchRecords('production-records')
+            setColumns(Object.keys(table[0]))
+            setRecords(table)
+        }
+        loadProduction();
+    }, []);
 
     const addProduction = async () => {
         console.log('clicked')
