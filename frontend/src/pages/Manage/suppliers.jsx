@@ -17,7 +17,12 @@ export default function SupplierS(){
 
     const [selectedAction, setSelectedAction] = useState("Search")
 
+    const [name, setName] = useState("")
     const [contact, setContact] = useState("")
+    const [address, setAddress] = useState("")
+
+    const [records, setRecords] = useState([])
+    const [columns, setColumns] = useState([])
 
     return(
         <div className='content'>
@@ -31,24 +36,34 @@ export default function SupplierS(){
                 isClearable
                 placeholder="Select action..."
                 />
-                <CreatableSelect
-                className="nameSelect"
-                options={options}
-                value={selected}
-                onChange={setSelected}
-                isClearable
-                placeholder="Name"
-                />
+                <>
+                    <label>Name:</label>
+                    <input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Enter name..."
+                    />
+                </>
+                
                 {selectedAction?.value === "Add" && (
-                    <div>
+                    <>
                         <label>Contact:</label>
                         <input
-                            type="text" 
                             value={contact} 
                             onChange={(e) => setContact(e.target.value)} 
-                            placeholder="Enter contact"
+                            placeholder="Enter contact..."
                         />
-                    </div>
+                
+                        <label>Address:</label>
+                        <input
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Enter name..."
+                        />
+    
+                    </>
+
+
                 )}
                 <button className="input-button">Proceed</button>
             </div>
@@ -57,31 +72,25 @@ export default function SupplierS(){
                 <table className="manage-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Product</th>
-                            <th>Starting Weight</th>
-                            <th>Ending Weight</th>
+                            {columns.map((column, index) => (
+                                <th key={index}>{column.replace(/_/g, ' ')}</th>
+                            ))}
                         </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>Pork</td>
-                            <td>10</td>
-                            <td>10</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>Beef</td>
-                            <td>5</td>
-                            <td>10</td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>Chicken</td>
-                            <td>8</td>
-                            <td>10</td>
-                        </tr>
+                    </thead>
+                    <tbody>
+                        {records.length > 0 ? (
+                            records.map((record, index) => (
+                                <tr key={index}>
+                                    {columns.map((column, colIndex) => (
+                                        <td key={colIndex}>{record[column]}</td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={columns.length || 1}>No records found</td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>
