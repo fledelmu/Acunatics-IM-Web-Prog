@@ -290,7 +290,7 @@ app.get("/api/manage-search-suppliers", async(req, res) => {
   const { name } = req.query
 
   try{
-    const [searchSupplier] = await db.query("SELECT name FROM supplier WHERE name = ?", [name])
+    const [searchSupplier] = await db.query("SELECT * FROM supplier WHERE name = ?", [name])
     if (searchSupplier.length > 0){
       res.status(200).json(searchSupplier)
     } else {
@@ -308,7 +308,7 @@ app.post("/api/manage-add-suppliers", async(req, res) => {
   try{
     await db.query("START TRANSACTION")
 
-    const [nameResult] = await db.query("SELECT name FROM supplier WHERE name = ?", [name])
+    const [nameResult] = await db.query("SELECT * FROM supplier WHERE name = ?", [name])
     const exists = nameResult.length > 0
 
     if(exists){
@@ -328,7 +328,55 @@ app.post("/api/manage-add-suppliers", async(req, res) => {
 })
 
 //Manage - Employees
+app.post("/api/manage-add-employee", async(req, res) => {
+  const { name, contact } = req.body
 
+  try{
+    await db.query("START TRANSACTION")
+
+    const [nameResult] = await db.query("SELECT * FROM employee WHERE name = ?", [name])
+    const exists = nameResult.length > 0
+
+    if(exists){
+      await db.query("ROLLBACK")
+      return res.status(400).json({message: "Employee already exists!"})
+    }
+
+    await db.query("INSERT INTO employee (name, contact) VALUES (?,?)", [name, contact])
+
+    await db.query("COMMIT")
+  } catch (error) {
+    console.error("Error adding employee:", error)
+    res.status(500).json({ message: "Internal server error" })
+  }
+})
+
+app.get("/api/manage-get-employee", async (req, res) =>{
+  try {
+    await db.query("START TRANSACTION")
+
+    const [getEmployees] = await db.query("SELECT * FROM employee")
+    res.status(200).json(getEmployees)
+  } catch (error) {
+    console.error("Error no employees!", error)
+    res.status(500).json({data: []})
+  }
+})
+
+app.get("/api/manage-search-employee", async(req, res) => {
+  const { name } = req.query
+
+  try {
+    await db.query("START TRANSACTION")
+
+    const [searchEmployee] = await db.query("SELECT * FROM employee WHERE name = ?", [name])
+
+    res.status(200).json(searchEmployee)
+  } catch (error){
+    console.error("Error, employee not found! ", error)
+    res.status(500).json({data: []})
+  }
+})
 //Manage - Outlets
 //Manage - Products
 //Manage - Items

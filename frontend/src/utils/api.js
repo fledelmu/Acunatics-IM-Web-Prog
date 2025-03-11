@@ -115,3 +115,41 @@ export const addSuppliers = async (data) => {
         return { success: false, message: "Error processing suppliers" }
     }
 }
+
+// Manage/Employees tab
+
+export const addEmployee = async (data) => {
+    try{
+        const response = await axios.post(`${URL}/api/manage-add-employee`, data)
+        console.log("Response received", response)
+
+        return response.data
+    } catch (error) {
+        console.error("Error processing employees: ", error)
+        return { success: false, message: "Error processing employees" }
+    }
+}
+
+export const fetchEmployees = async () => {
+    try{
+        const response = await axios.get(`${URL}/api/manage-get-employee`)
+
+        return response.data
+    } catch (error) {
+        console.error("Trouble retrieving employees!", error)
+        return []
+    }
+}
+
+export const searchEmployee = async (data) => {
+    try{
+        const response = await axios.get(`${URL}/api/manage-search-employee`, {
+            params: { name: data.name }
+        });
+
+        return response.data
+    } catch (error) {
+        console.error("Trouble searching employees!", error)
+        return []
+    }
+}
