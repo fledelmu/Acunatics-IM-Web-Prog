@@ -323,4 +323,26 @@ app.get("/api/inventory-stalls-inventory", async (req, res) => {
 });
 
 //Inventory - view - production - invetory
-app.get()
+app.get("/api/inventory-view-production-inventory", async (req, res) => {
+  try {
+    const [productionInventory] = await db.query(`
+      SELECT 
+        i.inventory_id, 
+        pd.product_name, 
+        p.product_size, 
+        p.quantity, 
+        p.price
+      FROM 
+        inventory i
+      JOIN 
+        product p ON i.product = p.product_id
+      JOIN 
+        Product_details pd ON p.product_id = pd.product_id
+    `);
+    res.json(productionInventory);
+  } catch (err) {
+    console.error("Error fetching production inventory:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+//Inventory - add - production - invetory
