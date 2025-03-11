@@ -51,7 +51,7 @@ export default function InvProduction(){
                             placeholder= {getSelected ? (getSelected.value === 'Material' ? 'Item' : 'Product') : 'Item'}
                             />
                         </div>
-                        <div>Select Date:</div>
+                        <label><h3>Pick Date</h3></label>
                         <div>
                             <DatePicker 
                             selected={selectedDate} 

@@ -22,7 +22,7 @@ export default function Delivery(){
             <div><h2>Delivery Report</h2></div>
             <div className="form">
                 <div><h3>Add Process:</h3></div>
-                    <div className="formInput">
+                    
                         <CreatableSelect
                         className="selection"
                         options={type}
@@ -31,8 +31,7 @@ export default function Delivery(){
                         isClearable
                         placeholder="Type..."
                         />
-                    </div>
-                    <div className="formInput">
+                    
                         <CreatableSelect
                         className="selection"
                         options={options}
@@ -41,8 +40,7 @@ export default function Delivery(){
                         isClearable
                         placeholder="Location..."
                         />
-                    </div>
-                    <div className="formInput">
+                    
                         <CreatableSelect
                         className="selection"
                         options={options}
@@ -51,7 +49,7 @@ export default function Delivery(){
                         isClearable
                         placeholder="Product..."
                         />
-                    </div>
+                    
                     <div className="formInput">
                         <input placeholder="Enter quantity..."></input> 
                     </div>

@@ -83,7 +83,7 @@ export default function RecordsProduction(){
                         <button className="input-button" onClick={fetchInfo}>Proceed</button>
                     </div>
                 </div>
-                <div>
+                <div className="records-table-container">
                     <table className="records-table">
                         <thead>
                             <tr>
