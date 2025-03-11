@@ -6,10 +6,7 @@ import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 
 export default function InvProduction(){
-    const Type = [
-        { value: "Material", label: "Material" },
-        { value: "Product", label: "Product" },
-    ]
+
 
     const [getSelected, setSelected] = useState(null)
 
@@ -28,19 +25,6 @@ export default function InvProduction(){
                 <div className="inventory-form-container">
                     <div><h2>Production Inventory</h2></div>
                     <div className="inventory-form">
-                        <div>
-                            <Select
-                            className="selection"
-                            options={Type} 
-                            value={getSelected}
-                            onChange={setSelected}
-                            isClearable
-                            placeholder="Type"
-                            />
-                        </div>
-                        <div>
-                            <label><h3>{getSelected ? (getSelected.value === 'Material' ? 'Item:' : 'Product:') : 'Item:'}</h3></label>
-                        </div>  
                         <div>
                             <Select
                             className="selection"
