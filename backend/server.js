@@ -345,4 +345,42 @@ app.get("/api/inventory-view-production-inventory", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-//Inventory - add - production - invetory
+//Inventory - add - production - inventory
+app.post("/api/inventory-add-production-inventory", async (req, res) => {
+  const { product_name, quantity, price, product_size } = req.body;
+  const now = new Date().toISOString();
+
+  try {
+    await db.query("START TRANSACTION");
+
+    // Check if the product details exist
+    const [productDetailsResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ?", [product_name]);
+    let productId;
+    
+    if (productDetailsResult.length > 0) {
+      productId = productDetailsResult[0].insertId;
+    } else {
+      // Insert new product details if they do not exist
+      const [addProductDetails] = await db.query("INSERT INTO Product_details (product_name) VALUES (?)", [product_name]);
+      productId = addProductDetails.insertId;
+    }
+    // Insert into inventory
+    const [addInventory] = await db.query(
+      `INSERT INTO inventory (product, date) VALUES (?, ?)`,
+      [productId, now]
+    );
+    const inventoryId = addInventory.insertId;
+
+    // Insert into product
+    const [addProduct] = await db.query(
+      `INSERT INTO product (product_id, product_size, quantity, price) VALUES (?, ?, ?, ?)`,
+      [productId, product_size, quantity, price]
+    );
+    await db.query("COMMIT");
+    res.status(201).json({ message: "Production inventory added successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error adding production inventory:", error);
+    res.status(500).json({ message: "Error adding production inventory", error: error.message });
+  }
+});
