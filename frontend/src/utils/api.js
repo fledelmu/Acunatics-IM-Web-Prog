@@ -53,20 +53,22 @@ export const addManager = async (data) => {
     }
 }
 
-export const findManager = async (name) => {
-    try{
-        const response = await axios.get(`${URL}/api/search-manager`)
-
-        return response.data
+export const findManager = async (data) => {
+    try {
+        const response = await axios.get(`${URL}/api/search-manager`, {
+            params: { name: data.name }
+        });
+        return response.data;
     } catch (error) {
-        console.error("Error fetching managers!", error)
-        return []
+        console.error("Error fetching managers", error);
+        return [];
     }
 }
 
+
 export const fetchManagers = async () => {
     try{
-        const response = await axios.get(`${URL}/api/get-manager`)
+        const response = await axios.get(`${URL}/api/get-managers`)
 
         return response.data
     } catch (error) {

@@ -232,7 +232,7 @@ app.post("/api/add-manager", async (req, res) => {
       return res.status(400).json({ message: "Manager already exists!" })
     }
 
-    await db.query("INSERT INTO manager (name, contact) VALUES (?,?)" [name, contact])
+    await db.query("INSERT INTO manager (name, contact) VALUES (?,?)", [name, contact])
 
     await db.query("COMMIT")
 
@@ -250,25 +250,25 @@ app.get("/api/search-manager", async (req, res) => {
     const [searchName] = await db.query("SELECT name FROM manager WHERE name = ?", [name])
 
     if (searchName.length > 0){
-      res.status(201).json({ message: "Manager found!" })
+      res.status(200).json(searchName)
     } else {
-      res.status(404).json({ message: "Manager not found" })
+      res.status(404).json({ message: "Manager not found", data: []})
     }
   } catch (error) {
     console.error("Error searching manager:", error)
-    res.status(500).json({message:"Internal server error"})
+    res.status(500).json({data: []})
   }
 })
 
-app.get("/api/get-managers", async (res) => {
+app.get("/api/get-managers", async (req, res) => {
 
   try{
     const [getManagers] = await db.query("SELECT * FROM manager" )
 
-    res.status(201).json({message:"Managers retrieved!"})
+    res.status(200).json(getManagers);
   } catch (error) {
     console.error("Error retrieving managers:", error)
-    res.status(500).json({message:"Internal server error"})
+    res.status(500).json({ message: "Internal server error", data: [] });
   }
 })
 
