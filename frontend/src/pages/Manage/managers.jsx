@@ -19,10 +19,11 @@ export default function Managers() {
 
     useEffect(() => {
         async function loadManagers() {
-            const response = await fetchManagers()
-            if (response.data?.length > 0) {
-                setRecords(response.data)
-                setColumns(Object.keys(response.data[0]))
+            let table = []
+            table = await fetchManagers()
+            if (table.length > 0) { 
+                setRecords(table)
+                setColumns(Object.keys(table[0]))
             } else {
                 setRecords([])
                 setColumns([])
@@ -47,9 +48,9 @@ export default function Managers() {
                 setName('')
 
                 const updatedManagers = await fetchManagers()
-                if (updatedManagers.data?.length > 0) {
-                    setRecords(updatedManagers.data)
-                    setColumns(Object.keys(updatedManagers.data[0]))
+                if (updatedManagers.length > 0) {
+                    setRecords(updatedManagers)
+                    setColumns(Object.keys(updatedManagers[0]))
                 } else {
                     setRecords([])
                     setColumns([])
@@ -62,9 +63,9 @@ export default function Managers() {
                 console.log("Search Results:", result)
 
                 setName('')
-                if (result.data?.length > 0) {
-                    setRecords(result.data)
-                    setColumns(Object.keys(result.data[0]))
+                if (result.length > 0) {
+                    setRecords(result)
+                    setColumns(Object.keys(result[0]))
                 } else {
                     setRecords([])
                     setColumns([])

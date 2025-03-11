@@ -266,7 +266,7 @@ app.get("/api/get-managers", async (req, res) => {
   try{
     const [getManagers] = await db.query("SELECT * FROM manager" )
 
-    res.status(200).json(getManagers);
+    res.status(200).json(getManagers)
   } catch (error) {
     console.error("Error retrieving managers:", error)
     res.status(500).json({ message: "Internal server error", data: [] });
@@ -275,7 +275,60 @@ app.get("/api/get-managers", async (req, res) => {
 
 
 //Manage - Suppliers
+
+app.get("/api/manage-get-suppliers", async (req,res) => {
+  try{
+    const [getSuppliers] = await db.query("SELECT * FROM supplier")
+    res.status(200).json(getSuppliers)
+  } catch (error) {
+    console.error("Error retrieving suppliers:", error)
+    res.status(500).json({message:"Internal server error", data:[]})
+  }
+})
+
+app.get("/api/manage-search-suppliers", async(req, res) => {
+  const { name } = req.query
+
+  try{
+    const [searchSupplier] = await db.query("SELECT name FROM supplier WHERE name = ?", [name])
+    if (searchSupplier.length > 0){
+      res.status(200).json(searchSupplier)
+    } else {
+      res.status(404).json({ message: "Supplier not found", data: []})
+    }
+  } catch (error) {
+    console.error("Error searching supplier:", error)
+    res.status(500).json({data: []})
+  }
+})
+
+app.post("/api/manage-add-suppliers", async(req, res) => {
+  const { name, contact, address } = req.body
+
+  try{
+    await db.query("START TRANSACTION")
+
+    const [nameResult] = await db.query("SELECT name FROM supplier WHERE name = ?", [name])
+    const exists = nameResult.length > 0
+
+    if(exists){
+      await db.query("ROLLBACK")
+      return res.status(400).json({ message: "Supplier already exists!" })
+    }
+
+    await db.query("INSERT INTO supplier (name, contact, address) VALUES (?,?,?)", [name, contact, address])
+
+    await db.query("COMMIT")
+
+    res.status(201).json({ message: "Supplier added successfully!" })
+  } catch (error) {
+    console.error("Error adding supplier:", error)
+    res.status(500).json({ message: "Internal server error" })
+  }
+})
+
 //Manage - Employees
+
 //Manage - Outlets
 //Manage - Products
 //Manage - Items
