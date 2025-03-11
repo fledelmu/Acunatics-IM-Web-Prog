@@ -11,23 +11,26 @@ function App() {
 
   return (
     <>
-      <div className="sidebar">
-        <img src={logo} alt="Sidebar Logo" className="sidebar-img"/>
-        <h1>Production Manager</h1>
-        <div className="sideButtonContainer">
-          <button className={`sideButton ${activePage === "process" ? "active" : ""}`} onClick={() => setActivePage("process")}>Process</button>
-          <button className={`sideButton ${activePage === "records" ? "active" : ""}`} onClick={() => setActivePage("records")}>Records</button>
-          <button className={`sideButton ${activePage === "inventory" ? "active" : ""}`} onClick={() => setActivePage("inventory")}>Inventory</button>
-          <button className={`sideButton ${activePage === "manage" ? "active" : ""}`} onClick={() => setActivePage("manage")}>Manage</button>
+      <div className="screen-view">
+        <div className="sidebar">
+          <img src={logo} alt="Sidebar Logo" className="sidebar-img"/>
+          <h2>Production Manager</h2>
+          <div className="sideButtonContainer">
+            <button className={`sideButton ${activePage === "process" ? "active" : ""}`} onClick={() => setActivePage("process")}>Process</button>
+            <button className={`sideButton ${activePage === "records" ? "active" : ""}`} onClick={() => setActivePage("records")}>Records</button>
+            <button className={`sideButton ${activePage === "inventory" ? "active" : ""}`} onClick={() => setActivePage("inventory")}>Inventory</button>
+            <button className={`sideButton ${activePage === "manage" ? "active" : ""}`} onClick={() => setActivePage("manage")}>Manage</button>
+          </div>
+        </div>
+
+        <div className="contentContainer">
+          {activePage === "process" && <Process></Process>}
+          {activePage === "records" && <Records></Records>}
+          {activePage === "inventory" && <Inventory></Inventory>}
+          {activePage === "manage" && <Manage></Manage>}
         </div>
       </div>
-
-      <div className="contentContainer">
-        {activePage === "process" && <Process></Process>}
-        {activePage === "records" && <Records></Records>}
-        {activePage === "inventory" && <Inventory></Inventory>}
-        {activePage === "manage" && <Manage></Manage>}
-      </div>
+      
     </>
   )
 }

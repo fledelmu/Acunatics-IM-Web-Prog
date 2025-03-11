@@ -42,7 +42,7 @@ export default function Items(){
                 placeholder="Name"
                 />
                 {selectedAction?.value === "Add" && (
-                    <div className="manage-form-container">
+                    <div>
                         <label>Unit:</label>
                         <Select
                             className="selection"

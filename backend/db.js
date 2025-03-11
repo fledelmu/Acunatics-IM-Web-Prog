@@ -12,4 +12,13 @@ const db = mysql.createPool({
   ssl: false,  
 });
 
+db.getConnection()
+  .then(connection => {
+    console.log("Database connection successful!");
+    connection.release();
+  })
+  .catch(err => {
+    console.error("Database connection failed:", err.message);
+  });
+
 export default db;

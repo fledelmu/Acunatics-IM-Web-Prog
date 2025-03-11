@@ -40,7 +40,7 @@ export default function SupplierS(){
                 placeholder="Name"
                 />
                 {selectedAction?.value === "Add" && (
-                    <div className="manage-form-container">
+                    <div>
                         <label>Contact:</label>
                         <input
                             type="text" 

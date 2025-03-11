@@ -51,7 +51,7 @@ export default function InvProduction(){
                             placeholder= {getSelected ? (getSelected.value === 'Material' ? 'Item' : 'Product') : 'Item'}
                             />
                         </div>
-                        <div>Select Date:</div>
+                        <label><h3>Pick Date</h3></label>
                         <div>
                             <DatePicker 
                             selected={selectedDate} 
@@ -62,40 +62,40 @@ export default function InvProduction(){
                             />
                         </div>
                     </div>
-                    
+                    <div className="tableContent">
+                        <table className="inventory-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Product</th>
+                                    <th>Starting Weight</th>
+                                    <th>Ending Weight</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>Pork</td>
+                                    <td>10</td>
+                                    <td>10</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>Beef</td>
+                                    <td>5</td>
+                                    <td>10</td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>Chicken</td>
+                                    <td>8</td>
+                                    <td>10</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div className="tableContent">
-                    <table className="inventory-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Product</th>
-                                <th>Starting Weight</th>
-                                <th>Ending Weight</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>Pork</td>
-                                <td>10</td>
-                                <td>10</td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>Beef</td>
-                                <td>5</td>
-                                <td>10</td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>Chicken</td>
-                                <td>8</td>
-                                <td>10</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                
             </div>
         </>
         
