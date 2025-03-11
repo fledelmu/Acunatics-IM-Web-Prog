@@ -54,75 +54,82 @@ app.post("/api/process-production", async (req, res) =>{
 
 // Process - Delivery
 app.post("/api/process-delivery", async (req, res) => {
-  const { client_name, location, order_items } = req.body;
+  const { type, target, location, order_items, date, quantity, price} = req.body;
   const now = new Date().toISOString();
+
+  console.log("Request body:", req.body);
 
   try {
     await db.query("START TRANSACTION");
 
-    // Find or Insert Client
-    let [client] = await db.query("SELECT client_id FROM client WHERE name = ?", [client_name]);
-    let clientId;
-    if (client.length > 0) {
-      clientId = client[0].client_id;
-    } else {
-      const [newClient] = await db.query("INSERT INTO client (name) VALUES (?)", [client_name]);
-      clientId = newClient.insertId;
+    let clientId = null;
+    let orderId = null;
+
+    if (type === "Client") {
+      console.log("Checking client:", target);
+      const [clientResult] = await db.query("SELECT client_id FROM client WHERE name = ?", [target]);
+      console.log("Client result:", clientResult);
+
+      if (clientResult.length > 0) {
+        clientId = clientResult[0].client_id;
+        console.log("Client ID found:", clientId);
+      } else {
+        const [addClient] = await db.query("INSERT INTO client (name) VALUES (?)", [target]);
+        clientId = addClient.insertId;
+        console.log("New client ID:", clientId);
+      }
     }
 
-    // Insert Order
-    const [newOrder] = await db.query("INSERT INTO orders (manager_id, date) VALUES (?, ?)", [1, now]); 
-    const orderId = newOrder.insertId;
+    if (type === "Outlet") {
+      console.log("Checking branch:", target);
+      const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE name = ?", [target]);
+      console.log("Branch result:", branchResult);
 
-    // Insert Order Details
-    for (const item of order_items) {
-      await db.query(
-        "INSERT INTO order_details (order_id, inventory_id, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?)",
-        [orderId, item.inventory_id, item.quantity, item.price, item.subtotal]
-      );
+      if (branchResult.length > 0) {
+        branchId = branchResult[0].branch_id;
+        console.log("Branch ID found:", branchId);
+      } else {
+        const [addBranch] = await db.query("INSERT INTO branch (name) VALUES (?)", [target]);
+        branchId = addBranch.insertId;
+        console.log("New branch ID:", branchId);
+      }
     }
 
-    // Insert Delivery
-    const [newDelivery] = await db.query(
-      "INSERT INTO delivery (order_id, client_id, location, date) VALUES (?, ?, ?, ?)",
-      [orderId, clientId, location, now]
+    if (!clientId) {
+      console.error("Client ID is not provided");
+      throw new Error("Client must be provided");
+    }
+
+    const [addOrder] = await db.query(
+      `INSERT INTO orders (manager_id, date) VALUES (?, ?)`,
+      [null, date] // Assuming manager_id is null for now
+    );
+    orderId = addOrder.insertId;
+    console.log("New order ID:", orderId);
+
+    const [addDelivery] = await db.query(
+      `INSERT INTO delivery (client_id, order_id, location, date) VALUES (?, ?, ?, ?)`,
+      [clientId, orderId, location, date]
+    );
+    const delivery_ref = addDelivery.insertId;
+    console.log("New delivery ID:", delivery_ref);
+
+    
+    subtotal = quantity * price;
+    const [addOrderDetails] = await db.query(
+
+      `INSERT INTO order_details (order_id, product_id, quantity, subtotal) VALUES (?, ?, ?, ?)`,
+      [orderId, order_items, quantity, subtotal]
     );
 
     await db.query("COMMIT");
-    res.status(201).json({ message: "Delivery recorded successfully" });
+    res.status(201).json({ message: "Delivery process recorded successfully" });
   } catch (error) {
     await db.query("ROLLBACK");
+    console.error("Error processing delivery:", error);
     res.status(500).json({ message: "Error processing delivery", error: error.message });
   }
 });
-
-app.get("/api/process-delivery-table", async (req, res) => {
-  const { order = "ASC" } = req.query;
-  const sortOrder = order.toUpperCase() === "DESC" ? "DESC" : "ASC";
-  try {
-    const query = `
-      SELECT 
-        d.delivery_id, 
-        c.name AS client_name, 
-        d.location, 
-        d.date, 
-        o.date AS order_date, 
-        od.quantity, 
-        od.subtotal 
-      FROM delivery d
-      JOIN client c ON d.client_id = c.client_id
-      JOIN orders o ON d.order_id = o.order_id
-      JOIN order_details od ON od.order_id = o.order_id
-      ORDER BY d.date ASC ${sortOrder}
-    `;
-
-    const [results] = await db.query(query);
-    res.status(200).json(results);
-  } catch (error) {
-    res.status(500).json({ message: "Error retrieving delivery records", error: error.message });
-  }
-});
-
 
 
 
@@ -207,3 +214,11 @@ app.get("/api/supply-records", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+
+//Manage - Managers
+//Manage - Suppliers
+//Manage - Employees
+//Manage - Outlets
+//Manage - Products
+//Manage - Items
