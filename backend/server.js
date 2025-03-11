@@ -21,18 +21,8 @@ app.post("/api/process-production", async (req, res) =>{
   try{
     await db.query("START TRANSACTION")
 
-    const [vatResult] = await db.query("SELECT vat_num FROM vat WHERE vat_name = ?", [vat]);
 
-    let vatNum
-    if (vatResult.length > 0) {
-        vatNum = vatResult[0].vat_num
-    } else {
-        const [addVat] = await db.query("INSERT INTO vat (vat_name) VALUES (?)", [vat])
-        vatNum = addVat.insertId; 
-    }
-
-
-    const[addBatch] = await db.query(`INSERT INTO batch (vat_num, date) VALUE (?,?)`, [vatNum, now])
+    const[addBatch] = await db.query(`INSERT INTO batch (vat_num, date) VALUE (?,?)`, [vat, now])
     const batch_ref = addBatch.insertId
 
     const[addTotalWeight] = await db.query(`INSERT INTO batch_details (batch_id, weight) VALUES (?,?)`, [batch_ref, total_weight])
@@ -50,34 +40,6 @@ app.post("/api/process-production", async (req, res) =>{
     res.status(500).json({ message: "Error inserting records", error: error.message })
   }
 })
-
-app.get("/api/process-production-table", async (req, res) => {
-  try {
-    const query = `
-      SELECT 
-        v.vat_name, 
-        b.batch_id, 
-        b.date, 
-        bd.weight AS total_weight,
-        a.weight AS start_weight,
-        af.weight AS end_weight
-      FROM batch b
-      JOIN vat v ON b.vat_num = v.vat_num
-      JOIN batch_details bd ON bd.batch_id = b.batch_id
-      JOIN antala a ON a.batch_details_id = bd.batch_details_id
-      JOIN antala_final af ON af.antala_id = a.antala_id
-      ORDER BY b.date ASC
-    `
-
-    const [results] = await db.query(query)
-    
-    res.status(200).json(results);
-  } catch (error) {
-    res.status(500).json({ message: "Error retrieving records", error: error.message })
-  }
-});
-
-
 
 // Records Tab
 app.get("/api/production-records", async (req, res) => {
