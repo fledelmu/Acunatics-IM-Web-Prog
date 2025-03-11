@@ -22,8 +22,18 @@ app.post("/api/process-production", async (req, res) =>{
   try{
     await db.query("START TRANSACTION")
 
+    const [vatResult] = await db.query("SELECT vat_num FROM vat WHERE vat_name = ?", [vat]);
 
-    const[addBatch] = await db.query(`INSERT INTO batch (vat_num, date) VALUE (?,?)`, [vat, now])
+    let vatNum
+    if (vatResult.length > 0) {
+        vatNum = vatResult[0].vat_num
+    } else {
+        const [addVat] = await db.query("INSERT INTO vat (vat_name) VALUES (?)", [vat])
+        vatNum = addVat.insertId; 
+    }
+
+
+    const[addBatch] = await db.query(`INSERT INTO batch (vat_num, date) VALUE (?,?)`, [vatNum, now])
     const batch_ref = addBatch.insertId
 
     const[addTotalWeight] = await db.query(`INSERT INTO batch_details (batch_id, weight) VALUES (?,?)`, [batch_ref, total_weight])
@@ -41,6 +51,79 @@ app.post("/api/process-production", async (req, res) =>{
     res.status(500).json({ message: "Error inserting records", error: error.message })
   }
 })
+// Process - Delivery (wa pa nahuman)
+app.post("/api/process-delivery", async (req, res) => {
+  const { client_name, location, order_items } = req.body;
+  const now = new Date().toISOString();
+
+  try {
+    await db.query("START TRANSACTION");
+
+    // Find or Insert Client
+    let [client] = await db.query("SELECT client_id FROM client WHERE name = ?", [client_name]);
+    let clientId;
+    if (client.length > 0) {
+      clientId = client[0].client_id;
+    } else {
+      const [newClient] = await db.query("INSERT INTO client (name) VALUES (?)", [client_name]);
+      clientId = newClient.insertId;
+    }
+
+    // Insert Order
+    const [newOrder] = await db.query("INSERT INTO orders (manager_id, date) VALUES (?, ?)", [1, now]); 
+    const orderId = newOrder.insertId;
+
+    // Insert Order Details
+    for (const item of order_items) {
+      await db.query(
+        "INSERT INTO order_details (order_id, inventory_id, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?)",
+        [orderId, item.inventory_id, item.quantity, item.price, item.subtotal]
+      );
+    }
+
+    // Insert Delivery
+    const [newDelivery] = await db.query(
+      "INSERT INTO delivery (order_id, client_id, location, date) VALUES (?, ?, ?, ?)",
+      [orderId, clientId, location, now]
+    );
+
+    await db.query("COMMIT");
+    res.status(201).json({ message: "Delivery recorded successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    res.status(500).json({ message: "Error processing delivery", error: error.message });
+  }
+});
+
+app.get("/api/process-delivery-table", async (req, res) => {
+  const { order = "ASC" } = req.query;
+  const sortOrder = order.toUpperCase() === "DESC" ? "DESC" : "ASC";
+  try {
+    const query = `
+      SELECT 
+        d.delivery_id, 
+        c.name AS client_name, 
+        d.location, 
+        d.date, 
+        o.date AS order_date, 
+        od.quantity, 
+        od.subtotal 
+      FROM delivery d
+      JOIN client c ON d.client_id = c.client_id
+      JOIN orders o ON d.order_id = o.order_id
+      JOIN order_details od ON od.order_id = o.order_id
+      ORDER BY d.date ASC ${sortOrder}
+    `;
+
+    const [results] = await db.query(query);
+    res.status(200).json(results);
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving delivery records", error: error.message });
+  }
+});
+
+
+
 
 // Records Tab
 app.get("/api/production-records", async (req, res) => {
