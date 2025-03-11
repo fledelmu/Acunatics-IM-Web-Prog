@@ -218,6 +218,7 @@ app.listen(PORT, () => {
 
 //Manage - Managers
 
+
 app.post("/api/add-manager", async (req, res) => {
   const { name, contact } = req.body
 
@@ -278,3 +279,108 @@ app.get("/api/get-managers", async (req, res) => {
 //Manage - Outlets
 //Manage - Products
 //Manage - Items
+//Inventory - Stalls Inventory
+app.get("/api/inventory-stalls-inventory", async (req, res) => {
+  const { location } = req.query;
+
+  // Log the received location parameter
+  console.log("Received location:", location);
+
+  // Check if location is provided
+  if (!location) {
+    return res.status(400).json({ message: "Location is required" });
+  }
+
+  try {
+    // Query to find branch ID based on location
+    const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [location]);
+    if (branchResult.length === 0) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+
+    const branchId = branchResult[0].branch_id;
+
+    // Query to fetch inventory data for the found branch ID
+    const [inventoryResult] = await db.query(`
+      SELECT 
+        bi.inventory_id, 
+        bi.order_id, 
+        bi.date, 
+        bp.product_id, 
+        bp.quantity, 
+        bp.price 
+      FROM branch_inventory bi
+      JOIN branch_product bp ON bi.inventory_id = bp.inventory_id
+      WHERE bi.branch_id = ?
+    `, [branchId]);
+
+    // Respond with the inventory data
+    res.json(inventoryResult);
+  } catch (error) {
+    console.error("Error fetching stalls inventory:", error);
+    res.status(500).json({ message: "Error fetching stalls inventory", error: error.message });
+  }
+});
+
+//Inventory - view - production - invetory
+app.get("/api/inventory-view-production-inventory", async (req, res) => {
+  try {
+    const [productionInventory] = await db.query(`
+      SELECT 
+        i.inventory_id, 
+        pd.product_name, 
+        p.product_size, 
+        p.quantity, 
+        p.price
+      FROM 
+        inventory i
+      JOIN 
+        product p ON i.product = p.product_id
+      JOIN 
+        Product_details pd ON p.product_id = pd.product_id
+    `);
+    res.json(productionInventory);
+  } catch (err) {
+    console.error("Error fetching production inventory:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+//Inventory - add - production - inventory
+app.post("/api/inventory-add-production-inventory", async (req, res) => {
+  const { product_name, quantity, price, product_size } = req.body;
+  const now = new Date().toISOString();
+
+  try {
+    await db.query("START TRANSACTION");
+
+    // Check if the product details exist
+    const [productDetailsResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ?", [product_name]);
+    let productId;
+    
+    if (productDetailsResult.length > 0) {
+      productId = productDetailsResult[0].insertId;
+    } else {
+      // Insert new product details if they do not exist
+      const [addProductDetails] = await db.query("INSERT INTO Product_details (product_name) VALUES (?)", [product_name]);
+      productId = addProductDetails.insertId;
+    }
+    // Insert into inventory
+    const [addInventory] = await db.query(
+      `INSERT INTO inventory (product, date) VALUES (?, ?)`,
+      [productId, now]
+    );
+    const inventoryId = addInventory.insertId;
+
+    // Insert into product
+    const [addProduct] = await db.query(
+      `INSERT INTO product (product_id, product_size, quantity, price) VALUES (?, ?, ?, ?)`,
+      [productId, product_size, quantity, price]
+    );
+    await db.query("COMMIT");
+    res.status(201).json({ message: "Production inventory added successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error adding production inventory:", error);
+    res.status(500).json({ message: "Error adding production inventory", error: error.message });
+  }
+});
