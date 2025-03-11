@@ -8,38 +8,53 @@ export default function Delivery(){
         { value: "Material", label: "Material" }
     ]
 
+    const type = [
+        { value: "Outlet", label: "Outlet" },
+        { value: "Client", label: "Client" }
+    ]
+
     const [selected, setSelected] = useState(null)
     
+    const [selectedType, setSelectedType] = useState(null)
+
     return (
         <div className="content">
-            <div><h2>Deliver Report</h2></div>
+            <div><h2>Delivery Report</h2></div>
             <div className="form">
                 <div><h3>Add Process:</h3></div>
-                <div className="formInput">
+                    
+                        <CreatableSelect
+                        className="selection"
+                        options={type}
+                        value={selectedType}
+                        onChange={setSelectedType}
+                        isClearable
+                        placeholder="Type..."
+                        />
+                    
                         <CreatableSelect
                         className="selection"
                         options={options}
                         value={selected}
                         onChange={setSelected}
                         isClearable
-                        placeholder="Location"
+                        placeholder="Location..."
                         />
-                    </div>
-                    <div className="formInput">
+                    
                         <CreatableSelect
                         className="selection"
                         options={options}
                         value={selected}
                         onChange={setSelected}
                         isClearable
-                        placeholder="Product"
+                        placeholder="Product..."
                         />
+                    
+                    <div className="formInput">
+                        <input placeholder="Enter quantity..."></input> 
                     </div>
                     <div className="formInput">
-                        <input placeholder="Enter Total Delivery"></input> 
-                    </div>
-                    <div className="formInput">
-                        <input placeholder="Enter Total Return"></input>
+                        <input placeholder="Enter price..."></input>
                     </div>
                 <button className="input-button">Add</button>
             </div>

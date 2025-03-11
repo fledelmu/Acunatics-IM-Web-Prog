@@ -15,7 +15,7 @@ export default function Stalls(){
             <div><h2>Stalls Report</h2></div>
             <div className="form">
                 <div><h3>Add Process:</h3></div>
-                <div className="formInput">
+                
                     <CreatableSelect
                     className="selection"
                     options={options}
@@ -24,8 +24,8 @@ export default function Stalls(){
                     isClearable
                     placeholder="Outlet"
                     />
-                </div>
-                <div className="formInput">
+                
+                
                     <CreatableSelect
                     className="selection"
                     options={options}
@@ -34,10 +34,9 @@ export default function Stalls(){
                     isClearable
                     placeholder="Product"
                     />
-                </div>
-                <div className="formInput">
+                
                     <input placeholder="Enter Total Delivery"></input> 
-                </div>
+                
                 <button className="input-button">Add</button>
             </div>
             <div className="tableContent">

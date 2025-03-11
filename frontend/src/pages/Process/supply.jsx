@@ -50,8 +50,7 @@ export default function Supply(){
                 </div>
                 <button className="input-button">Add</button>
             </div> 
-            <div className="tableContent">
-                
+
                 <table className="process-table">
                     <thead>
                         <tr>
@@ -82,7 +81,7 @@ export default function Supply(){
                         </tr>
                     </tbody>
                 </table>
-            </div>
+            
         </div>
     )
 }

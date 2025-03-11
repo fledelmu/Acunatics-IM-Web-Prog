@@ -13,14 +13,79 @@ app.get("/", (req, res) => {
   res.send("Backend is running!");
 });
 
+// Process Tab
+app.post("/api/process-production", async (req, res) =>{
+  const {vat, total_weight, start_weight, end_weight} = req.body
+  const now = new Date().toISOString();
 
+  try{
+    await db.query("START TRANSACTION")
+
+    const [vatResult] = await db.query("SELECT vat_num FROM vat WHERE vat_name = ?", [vat]);
+
+    let vatNum
+    if (vatResult.length > 0) {
+        vatNum = vatResult[0].vat_num
+    } else {
+        const [addVat] = await db.query("INSERT INTO vat (vat_name) VALUES (?)", [vat])
+        vatNum = addVat.insertId; 
+    }
+
+
+    const[addBatch] = await db.query(`INSERT INTO batch (vat_num, date) VALUE (?,?)`, [vatNum, now])
+    const batch_ref = addBatch.insertId
+
+    const[addTotalWeight] = await db.query(`INSERT INTO batch_details (batch_id, weight) VALUES (?,?)`, [batch_ref, total_weight])
+    const details_ref = addTotalWeight.insertId
+
+
+    const[addStartWeight] = await db.query(`INSERT INTO antala (batch_details_id, weight) VALUES (?,?)`, [details_ref, start_weight])
+    const antala_ref = addStartWeight.insertId
+
+    const[addEndWeight] = await db.query(`INSERT INTO antala_final (antala_id, weight) VALUES (?, ?)`, [antala_ref, end_weight])
+
+    await db.query("COMMIT")
+    res.status(201).json({ message: "Production process recorded successfully" })
+  } catch (error){
+    res.status(500).json({ message: "Error inserting records", error: error.message })
+  }
+})
+
+app.get("/api/process-production-table", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        v.vat_name, 
+        b.batch_id, 
+        b.date, 
+        bd.weight AS total_weight,
+        a.weight AS start_weight,
+        af.weight AS end_weight
+      FROM batch b
+      JOIN vat v ON b.vat_num = v.vat_num
+      JOIN batch_details bd ON bd.batch_id = b.batch_id
+      JOIN antala a ON a.batch_details_id = bd.batch_details_id
+      JOIN antala_final af ON af.antala_id = a.antala_id
+      ORDER BY b.date ASC
+    `
+
+    const [results] = await db.query(query)
+    
+    res.status(200).json(results);
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving records", error: error.message })
+  }
+});
+
+
+
+// Records Tab
 app.get("/api/production-records", async (req, res) => {
-  const { order = "ASC" } = req.query; 
-  const sortOrder = order.toUpperCase() === "DESC" ? "DESC" : "ASC"; 
 
   try {
-    const [productionRecords] = await db.query(`
+    const [productionRecords] = await db.query(` 
       SELECT 
+        b.batch_id AS batch_id, 
         b.batch_id AS batch_id, 
         b.vat_num, 
         bd.weight AS total_weight, 
@@ -28,6 +93,10 @@ app.get("/api/production-records", async (req, res) => {
         af.weight AS final_weight, 
         b.date
       FROM batch b
+      JOIN batch_details bd ON b.batch_id = bd.batch_id
+      JOIN antala a ON bd.batch_details_id = a.batch_details_id
+      JOIN antala_final af ON a.antala_id = af.antala_id
+      ORDER BY b.date
       JOIN batch_details bd ON b.batch_id = bd.batch_id
       JOIN antala a ON bd.batch_details_id = a.batch_details_id
       JOIN antala_final af ON a.antala_id = af.antala_id
@@ -48,13 +117,15 @@ app.get("/api/delivery-records", async (req, res) => {
   try {
     const [deliveryRecords] = await db.query(`
       SELECT 
-        d.client_id, 
+        d.delivery_id, 
         c.name AS client_name, 
         d.location, 
         d.date, 
         od.quantity, 
         od.subtotal
       FROM delivery d
+      JOIN client c ON d.delivery_id = c.client_id
+      JOIN order_details od ON d.delivery_id = od.order_id
       JOIN client c ON d.client_id = c.client_id
       JOIN order_details od ON d.id = od.delivery_id
       ORDER BY d.date ${sortOrder}
@@ -73,15 +144,15 @@ app.get("/api/supply-records", async (req, res) => {
   try {
     const [supplyRecords] = await db.query(`
       SELECT 
-        s.id, 
+        s.supply_id, 
         sp.name AS supplier_name, 
         s.date, 
         sd.unit, 
         sd.quantity, 
         sd.price
       FROM supply s
-      JOIN suppliers sp ON s.supplier_id = sp.id
-      JOIN supply_details sd ON s.id = sd.supply_id
+      JOIN supplier sp ON s.supplier_id = sp.supplier_id
+      JOIN supply_details sd ON s.supply_id = sd.supply_id
       ORDER BY s.date ${sortOrder}
     `);
     res.json(supplyRecords);

@@ -12,12 +12,12 @@
     align-items: center;
     justify-content: center;
     gap: 20px;  
-    width: 70%;
+    margin: 20px;
+    width: 100%;
   }
   .selection{
     width: 200px;
   }
-  
   
   .inventory-table{
     padding: 30px;

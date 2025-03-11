@@ -14,11 +14,13 @@ export default function InvStall(){
 
     return(
         <div className="content">
-            <div><h2>Stalls Inventory</h2></div>
-            <div className="stalls-inventory-table-container">
+            
+            <div className="inventory-form-container">
+                <div><h2>Stalls Inventory</h2></div>
                 <div className="inventory-form">
                     <div>
                         <CreatableSelect
+                            className="selection"
                             options={sampleLocation}
                             value={selectedLocation}
                             onChange={setSelectedLocation}
@@ -28,8 +30,8 @@ export default function InvStall(){
                     </div>
                 </div>
                 
-                <div className="stalls-inventory-table-container">
-                    <table className="stalls-table">
+                <div className="tableContent">
+                    <table className="inventory-table">
                         <thead>
                             <tr>
                                 <th>Name</th>
