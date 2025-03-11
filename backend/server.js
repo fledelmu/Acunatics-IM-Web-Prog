@@ -14,6 +14,7 @@ app.get("/", (req, res) => {
 });
 
 // Process Tab
+// Process - Production
 app.post("/api/process-production", async (req, res) =>{
   const {vat, total_weight, start_weight, end_weight} = req.body
   const now = new Date().toISOString();
@@ -50,32 +51,77 @@ app.post("/api/process-production", async (req, res) =>{
     res.status(500).json({ message: "Error inserting records", error: error.message })
   }
 })
+// Process - Delivery (wa pa nahuman)
+app.post("/api/process-delivery", async (req, res) => {
+  const { client_name, location, order_items } = req.body;
+  const now = new Date().toISOString();
 
-app.get("/api/process-production-table", async (req, res) => {
+  try {
+    await db.query("START TRANSACTION");
+
+    // Find or Insert Client
+    let [client] = await db.query("SELECT client_id FROM client WHERE name = ?", [client_name]);
+    let clientId;
+    if (client.length > 0) {
+      clientId = client[0].client_id;
+    } else {
+      const [newClient] = await db.query("INSERT INTO client (name) VALUES (?)", [client_name]);
+      clientId = newClient.insertId;
+    }
+
+    // Insert Order
+    const [newOrder] = await db.query("INSERT INTO orders (manager_id, date) VALUES (?, ?)", [1, now]); 
+    const orderId = newOrder.insertId;
+
+    // Insert Order Details
+    for (const item of order_items) {
+      await db.query(
+        "INSERT INTO order_details (order_id, inventory_id, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?)",
+        [orderId, item.inventory_id, item.quantity, item.price, item.subtotal]
+      );
+    }
+
+    // Insert Delivery
+    const [newDelivery] = await db.query(
+      "INSERT INTO delivery (order_id, client_id, location, date) VALUES (?, ?, ?, ?)",
+      [orderId, clientId, location, now]
+    );
+
+    await db.query("COMMIT");
+    res.status(201).json({ message: "Delivery recorded successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    res.status(500).json({ message: "Error processing delivery", error: error.message });
+  }
+});
+
+app.get("/api/process-delivery-table", async (req, res) => {
+  const { order = "ASC" } = req.query;
+  const sortOrder = order.toUpperCase() === "DESC" ? "DESC" : "ASC";
   try {
     const query = `
       SELECT 
-        v.vat_name, 
-        b.batch_id, 
-        b.date, 
-        bd.weight AS total_weight,
-        a.weight AS start_weight,
-        af.weight AS end_weight
-      FROM batch b
-      JOIN vat v ON b.vat_num = v.vat_num
-      JOIN batch_details bd ON bd.batch_id = b.batch_id
-      JOIN antala a ON a.batch_details_id = bd.batch_details_id
-      JOIN antala_final af ON af.antala_id = a.antala_id
-      ORDER BY b.date ASC
-    `
+        d.delivery_id, 
+        c.name AS client_name, 
+        d.location, 
+        d.date, 
+        o.date AS order_date, 
+        od.quantity, 
+        od.subtotal 
+      FROM delivery d
+      JOIN client c ON d.client_id = c.client_id
+      JOIN orders o ON d.order_id = o.order_id
+      JOIN order_details od ON od.order_id = o.order_id
+      ORDER BY d.date ASC ${sortOrder}
+    `;
 
-    const [results] = await db.query(query)
-    
+    const [results] = await db.query(query);
     res.status(200).json(results);
   } catch (error) {
-    res.status(500).json({ message: "Error retrieving records", error: error.message })
+    res.status(500).json({ message: "Error retrieving delivery records", error: error.message });
   }
 });
+
 
 
 
@@ -97,10 +143,6 @@ app.get("/api/production-records", async (req, res) => {
       JOIN antala a ON bd.batch_details_id = a.batch_details_id
       JOIN antala_final af ON a.antala_id = af.antala_id
       ORDER BY b.date
-      JOIN batch_details bd ON b.batch_id = bd.batch_id
-      JOIN antala a ON bd.batch_details_id = a.batch_details_id
-      JOIN antala_final af ON a.antala_id = af.antala_id
-      ORDER BY b.date ${sortOrder}
     `);
     
     res.json(productionRecords);
