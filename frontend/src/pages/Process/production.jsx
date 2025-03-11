@@ -22,14 +22,14 @@ export default function Production(){
     const [columns, setColumns] = useState([])
 
     const addProduction = async () => {
-        console.log('clicked');
+        console.log('clicked')
 
         if (!selected || !totalWeight || !startWeight || !endWeight) {
             alert("Please fill in all fields");
-            return;
+            return
         }
 
-        const vat = selected.value; 
+        const vat = selected.value
 
         const data = {
             vat,

@@ -14,14 +14,12 @@ export default function Process(){
             <div className="tabContainer">
                 <button className={`tab ${activeTab === "Tab 1" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 1")}>Production</button>
                 <button className={`tab ${activeTab === "Tab 2" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 2")}>Delivery</button>
-                <button className={`tab ${activeTab === "Tab 3" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 3")}>Stalls</button>
-                <button className={`tab ${activeTab === "Tab 4" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 4")}>Supply</button>
+                <button className={`tab ${activeTab === "Tab 3" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 3")}>Supply</button>
             </div>
             <div className="content">
                 {activeTab === "Tab 1" && <Production/>}
                 {activeTab === "Tab 2" && <Delivery/>}
-                {activeTab === "Tab 3" && <Stalls/>}
-                {activeTab === "Tab 4" && <Supply/>}
+                {activeTab === "Tab 3" && <Supply/>}
             </div>  
         </div>
       </>

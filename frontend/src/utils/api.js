@@ -16,7 +16,9 @@ export const processProduction = async (data) =>{
 
 export const processDelivery = async (data) => {
     try{
-        const response = await axios.post(`${URL}/api/process-delivery`)
+        const response = await axios.post(`${URL}/api/process-delivery`,
+            
+        )
 
         return response.data
     } catch(error){
