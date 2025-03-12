@@ -322,48 +322,32 @@ app.get("/api/inventory-stalls-inventory", async (req, res) => {
   }
 });
 
-//Inventory - view - production - invetory
-app.get("/api/inventory-view-production-inventory", async (req, res) => {
-  try {
-    const [productionInventory] = await db.query(`
-      SELECT 
-        i.inventory_id, 
-        pd.product_name, 
-        p.product_size, 
-        p.quantity, 
-        p.price
-      FROM 
-        inventory i
-      JOIN 
-        product p ON i.product = p.product_id
-      JOIN 
-        Product_details pd ON p.product_id = pd.product_id
-    `);
-    res.json(productionInventory);
-  } catch (err) {
-    console.error("Error fetching production inventory:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-//Inventory - add - production - inventory
+//Inventory - add - production - invetory
 app.post("/api/inventory-add-production-inventory", async (req, res) => {
   const { product_name, quantity, price, product_size } = req.body;
   const now = new Date().toISOString();
 
+  console.log("Received request body:", req.body);
+
+  if (!product_name || !quantity || !price || !product_size) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
   try {
     await db.query("START TRANSACTION");
 
-    // Check if the product details exist
+    // Check if product details exist
     const [productDetailsResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ?", [product_name]);
     let productId;
-    
+
     if (productDetailsResult.length > 0) {
-      productId = productDetailsResult[0].insertId;
+      productId = productDetailsResult[0].product_id;
     } else {
-      // Insert new product details if they do not exist
+      // Insert into Product_details
       const [addProductDetails] = await db.query("INSERT INTO Product_details (product_name) VALUES (?)", [product_name]);
       productId = addProductDetails.insertId;
     }
+
     // Insert into inventory
     const [addInventory] = await db.query(
       `INSERT INTO inventory (product, date) VALUES (?, ?)`,
@@ -371,11 +355,12 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     );
     const inventoryId = addInventory.insertId;
 
-    // Insert into product
-    const [addProduct] = await db.query(
+    // Corrected: Insert into product table using product_id (not product_name)
+    await db.query(
       `INSERT INTO product (product_id, product_size, quantity, price) VALUES (?, ?, ?, ?)`,
       [productId, product_size, quantity, price]
     );
+
     await db.query("COMMIT");
     res.status(201).json({ message: "Production inventory added successfully" });
   } catch (error) {
