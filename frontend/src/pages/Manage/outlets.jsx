@@ -31,14 +31,7 @@ export default function Outlets(){
                 isClearable
                 placeholder="Select action..."
                 />
-                <CreatableSelect
-                className="nameSelect"
-                options={options}
-                value={selected}
-                onChange={setSelected}
-                isClearable
-                placeholder="Location"
-                />
+                <input placeholder="Enter location..."></input>
                 <button className="input-button">Proceed</button>
             </div>
             

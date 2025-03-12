@@ -153,3 +153,35 @@ export const searchEmployee = async (data) => {
         return []
     }
 }
+
+//Manage/Outlets
+export const fetchOutlets = async (data) => {
+    try{
+        const response = await axios.get(`${URL}/api/manage-get-outlets`)
+
+        return response.data
+    } catch (error) {
+        console.error("Trouble searching outlets!", error)
+        return []
+    }
+}
+
+export const searchOutlet = async (data) => {
+    try{
+        const response = await axios.get(`${URL}/api/manage-search-outlets`)
+
+        return  response.data
+    } catch (error){
+        console.error("Trouble searching outlet!", error)
+        return []
+    }
+}
+
+export const addOutlet = async (data) => {
+    try{
+        const response = await axios.post(`${URL}/api/manage-add-outlets`)
+    } catch (error) {
+        console.error("Trouble searching outlet!", error)
+        return []
+    }
+}
