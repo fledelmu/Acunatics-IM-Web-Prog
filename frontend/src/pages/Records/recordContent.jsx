@@ -21,41 +21,42 @@ export default function RecordsProduction(){
     const [columns, setColumns] = useState([])
 
     const fetchInfo = async () => {
-        console.log("clicked");
+    console.log("clicked");
 
-        try {
+    try {
+        const endPoints = {
+            Production: 'production-records',
+            Delivery: 'delivery-records',
+            Supply: 'supply-records',
+        };
 
-            let data = []
-
-            if(selectedType.value === 'Production'){
-                data = await fetchRecords('production-records')
-                console.log("Fetched data:", data)
-            }
-            
-            if(selectedType === 'Delivery'){
-                data = await fetchRecords('delivery-records')
-                console.log("Fetched data:", data)
-            }
-
-            if(selectedType === 'Supply'){
-                data = await fetchRecords('supply-records')
-                console.log("Fetched data:", data)
-            }
-
-            if (!data || data.length === 0) {
-                setColumns([])
-                setRecords([])
-                return
-            }
-
-            setColumns(Object.keys(data[0]))
-            setRecords(data)
-        } catch (error) {
-            console.error("Fetching error:", error)
-            setColumns([])
-            setRecords([])
+        if (!selectedType) {
+            console.error("No type selected");
+            return;
         }
+
+        console.log("Fetching records for:", selectedType.value);
+
+        const data = await fetchRecords(endPoints[selectedType.value]);
+        console.log("Fetched Data:", data);
+
+        if (!data || data.length === 0) {
+            setColumns([]);
+            setRecords([]);
+            console.warn("No records found");
+            return;
+        }
+
+        console.log("Setting columns:", Object.keys(data[0]));
+        setColumns(Object.keys(data[0]));
+        setRecords(data);
+    } catch (error) {
+        console.error("Fetching error:", error);
+        setColumns([]);
+        setRecords([]);
     }
+};
+
     return(
         <div className="content">
             <div className="records-content">
@@ -83,31 +84,30 @@ export default function RecordsProduction(){
                         <button className="input-button" onClick={fetchInfo}>Proceed</button>
                     </div>
                 </div>
-                <div className="records-table-container">
-                    <table className="records-table">
-                        <thead>
-                            <tr>
-                                {columns.map((column, index) => (
-                                    <th key={index}>{column.replace(/_/g, ' ')}</th> 
+                <div className="table-container">
+                    {columns.length === 0 ? (
+                        <div>No records found</div>
+                    ) : (
+                        <>
+                            <div className='table-header'>  
+                                {columns.map((col, index) => (
+                                    <div className="table-data" key={index}>{col}</div>
                                 ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {records.length > 0 ? (
-                                records.map((record, index) => (
-                                    <tr key={index}>
-                                        {columns.map((column, colIndex) => (
-                                            <td key={colIndex}>{record[column]}</td>
-                                        ))}
-                                    </tr>
-                                ))
+                            </div>
+                            {records.length === 0 ? (
+                                <div><h1>No records found</h1></div>
                             ) : (
-                                <tr>
-                                    <td colSpan={columns.length || 1}>No records found</td>
-                                </tr>
+                                records.map((record, rowIndex) => (
+                                    <div className="table-row" key={rowIndex}>
+                                        {columns.map((col, colIndex) => (
+                                            <div key={colIndex}>{record[col] || "N/A"}</div>
+                                        ))}
+                                    </div>
+                                ))
                             )}
-                        </tbody>
-                    </table>
+                            
+                        </>
+                    )}
                 </div>
             </div>
         </div>
