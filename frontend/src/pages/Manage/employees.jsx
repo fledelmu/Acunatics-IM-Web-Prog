@@ -31,49 +31,61 @@ export default function Employees() {
     }, [])
 
     const handleButton = async () => {
-        const data = { name, contact }
-
+        const data = { name, contact };
+    
+        if (!selectedAction) {
+            alert("Please select an action.");
+            return;
+        }
+    
         try {
             if (selectedAction?.value === "Add") {
-                const addResponse = await addEmployee(data)
-
-                if (addResponse.success === false) {
-                    alert(addResponse.message)
-                    return
+                console.log("Adding employee...", data);
+                const addResponse = await addEmployee(data);
+                console.log("Add Response:", addResponse);
+    
+                if (!addResponse || addResponse.success === false) {
+                    alert(addResponse?.message || "Failed to add employee.");
+                    return;
                 }
-
-                setContact('')
-                setName('')
-
-                const updatedEmployees = await fetchEmployees()
-                if (updatedEmployees.length > 0) {
-                    setRecords(updatedEmployees)
-                    setColumns(Object.keys(updatedEmployees[0]))
+    
+                setContact('');
+                setName('');
+    
+                console.log("Fetching updated employees...");
+                const updatedEmployees = await fetchEmployees();
+                console.log("Updated Employees:", updatedEmployees);
+    
+                if (updatedEmployees?.length > 0) {
+                    setRecords(updatedEmployees);
+                    setColumns(Object.keys(updatedEmployees[0]));
                 } else {
-                    setRecords([])
-                    setColumns([])
+                    setRecords([]);
+                    setColumns([]);
                 }
             }
-
+    
             if (selectedAction?.value === "Search") {
-                console.log("Searching manager...", data)
-                const result = await searchEmployee(data)
-                console.log("Search Results:", result)
-
-                setName('')
-                if (result.length > 0) {
-                    setRecords(result)
-                    setColumns(Object.keys(result[0]))
+                console.log("Searching manager...", data);
+                const result = await searchEmployee(data);
+                console.log("Search Results:", result);
+    
+                setName('');
+    
+                if (result?.length > 0) {
+                    setRecords(result);
+                    setColumns(Object.keys(result[0]));
                 } else {
-                    setRecords([])
-                    setColumns([])
+                    setRecords([]);
+                    setColumns([]);
                 }
             }
         } catch (error) {
-            console.error("Error executing action:", error)
-            alert("An error occurred while fulfilling the request.")
+            console.error("Error executing action:", error);
+            alert("An error occurred while fulfilling the request.");
         }
-    }
+    };
+    
 
     return (
         <div className='content'>
@@ -108,31 +120,30 @@ export default function Employees() {
                 <button className="input-button" onClick={handleButton}>Proceed</button>
             </div>
 
-            <div className="manage-table-content">
-                <table className="manage-table">
-                    <thead>
-                        <tr>
-                            {columns.map((column, index) => (
-                                <th key={index}>{column.replace(/_/g, ' ')}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {records.length > 0 ? (
-                            records.map((record, index) => (
-                                <tr key={index}>
-                                    {columns.map((column, colIndex) => (
-                                        <td key={colIndex}>{record[column]}</td>
-                                    ))}
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={columns.length || 1}>No records found</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+            <div className="table-container">
+                {columns.length === 0 ? (
+                    <div> No records found</div>
+                ) : (
+                    <>
+                    <div className='table-header'>
+                        {columns.map((col, index) => (
+                            <div className="table-data" key={index}>{col}</div>
+                        ))}
+                    </div>
+                    {records.length === 0 ? (
+                        <div></div>
+                    ) : (
+                        records.map((record, rowIndex) => (
+                            <div className='table-row' key={rowIndex}>
+                                {columns.map((col, colIndex) => (
+                                    <div key={colIndex}>{record[col] || "???"}</div>
+                                ))}
+                                <button className='table-button'>Edit</button>
+                            </div>
+                        ))
+                    )}
+                    </>
+                )}
             </div>
         </div>
     )
