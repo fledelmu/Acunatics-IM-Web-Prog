@@ -18,7 +18,8 @@ export default function Employees() {
 
     useEffect(() => {
         async function loadEmployees() {
-            let table = await fetchEmployees()
+            let table = []
+            table = await fetchEmployees()
             if (table.length > 0) {
                 setRecords(table)
                 setColumns(Object.keys(table[0]))
@@ -31,60 +32,44 @@ export default function Employees() {
     }, [])
 
     const handleButton = async () => {
-        const data = { name, contact };
-    
-        if (!selectedAction) {
-            alert("Please select an action.");
-            return;
-        }
+        const data = { name, contact }
     
         try {
             if (selectedAction?.value === "Add") {
-                console.log("Adding employee...", data);
-                const addResponse = await addEmployee(data);
-                console.log("Add Response:", addResponse);
+                const addResponse = await addEmployee(data)
     
-                if (!addResponse || addResponse.success === false) {
-                    alert(addResponse?.message || "Failed to add employee.");
-                    return;
-                }
+                setContact('')
+                setName('')
     
-                setContact('');
-                setName('');
-    
-                console.log("Fetching updated employees...");
-                const updatedEmployees = await fetchEmployees();
-                console.log("Updated Employees:", updatedEmployees);
-    
-                if (updatedEmployees?.length > 0) {
-                    setRecords(updatedEmployees);
-                    setColumns(Object.keys(updatedEmployees[0]));
-                } else {
-                    setRecords([]);
-                    setColumns([]);
-                }
+                const updatedEmployees = await fetchEmployees()
+                console.log("Updated employees:", updatedEmployees)
+                
+                setRecords(updatedEmployees)
+                setColumns(Object.keys(updatedEmployees[0]))
+
             }
     
             if (selectedAction?.value === "Search") {
-                console.log("Searching manager...", data);
-                const result = await searchEmployee(data);
-                console.log("Search Results:", result);
+                console.log("Searching manager...", data)
+                const result = await searchEmployee(data)
+                console.log("Search Results:", result)
     
-                setName('');
-    
-                if (result?.length > 0) {
-                    setRecords(result);
-                    setColumns(Object.keys(result[0]));
+                setName('')
+                if (result.length > 0) {
+                    setRecords(result)
+                    setColumns(Object.keys(result[0]))
                 } else {
-                    setRecords([]);
-                    setColumns([]);
+                    setRecords([])
+                    setColumns([])
                 }
             }
         } catch (error) {
-            console.error("Error executing action:", error);
-            alert("An error occurred while fulfilling the request.");
+                console.error("Error executing action:", error)
+                alert("An error occurred while fulfilling the request.")
         }
-    };
+    }
+    
+    
     
 
     return (

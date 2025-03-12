@@ -1,23 +1,78 @@
 import '../../App.css'
 import './manage.css'
-import {useState} from 'react'
-import CreatableSelect from 'react-select/creatable'
+import { useState, useEffect } from 'react'
 import Select from 'react-select'
-
+import { fetchOutlets, searchOutlet, addOutlet } from '../../utils/api'
 export default function Outlets(){
     const actions = [
         {value: "Add", label: "Add"},
         {value: "Search", label: "Search"}
     ]
-    const options = [
-        {value: "Manager 1", label: "Manager 1"}
-    ]
-
-    const [selected, setSelected] = useState(null)
 
     const [selectedAction, setSelectedAction] = useState("Search")
 
-    const [contact, setContact] = useState("")
+    const [records, setRecords] = useState([])
+    const [columns, setColumns] = useState([])
+
+    const [location, setLocation] = useState("")
+
+    useEffect(() => {
+        async function loadOutlets() {
+            let table = []
+            table = await fetchOutlets()
+            if (table.length > 0) { 
+                setRecords(table)
+                setColumns(Object.keys(table[0]))
+            } else {
+                setRecords([])
+                setColumns([])
+            }
+        }
+        loadOutlets()
+    }, [])
+
+    const handleButton = async () => {
+        const data = { location }
+        console.log("clicked")
+        try {
+            if (selectedAction?.value === "Add") {
+                const addResponse = await addOutlet(data)
+
+                if (addResponse.success === false) {
+                    alert(addResponse.message)
+                    return
+                }
+                setLocation('')
+
+                const updatedOutlets = await fetchOutlets()
+                if (updatedOutlets.length > 0) {
+                    setRecords(updatedOutlets)
+                    setColumns(Object.keys(updatedOutlets[0]))
+                } else {
+                    setRecords([])
+                    setColumns([])
+                }
+            }
+
+            if (selectedAction?.value === "Search") {
+                console.log("Searching Outlet...", data)
+                const result = await searchOutlet(data)
+                console.log("Search Results:", result)
+
+                setLocation('')
+                if (result.length > 0) {
+                    setRecords(result)
+                    setColumns(Object.keys(result[0]))
+                } else {
+                    setRecords([])
+                    setColumns([])
+                }
+            }
+        } catch (error) {
+            console.error("Error executing action:", error)
+            alert("An error occurred while fulfilling the request.")
+        }
+    }
 
     return(
         <div className='content'>
@@ -31,41 +86,42 @@ export default function Outlets(){
                 isClearable
                 placeholder="Select action..."
                 />
-                <input placeholder="Enter location..."></input>
-                <button className="input-button">Proceed</button>
+                <> 
+                    <label>Location:</label>
+                    <input 
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Enter location..."
+                    />
+                </>
+                
+                <button className="input-button" onClick={handleButton}>Proceed</button>
             </div>
             
-            <div className="manage-table-content">
-                <table className="manage-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Product</th>
-                            <th>Starting Weight</th>
-                            <th>Ending Weight</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>Pork</td>
-                            <td>10</td>
-                            <td>10</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>Beef</td>
-                            <td>5</td>
-                            <td>10</td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>Chicken</td>
-                            <td>8</td>
-                            <td>10</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div className="table-container">
+                {columns.length === 0 ? (
+                    <div> No records found</div>
+                ) : (
+                    <>
+                    <div className='table-header'>
+                        {columns.map((col, index) => (
+                            <div className="table-data" key={index}>{col}</div>
+                        ))}
+                    </div>
+                    {records.length === 0 ? (
+                        <div></div>
+                    ) : (
+                        records.map((record, rowIndex) => (
+                            <div className='table-row' key={rowIndex}>
+                                {columns.map((col, colIndex) => (
+                                    <div key={colIndex}>{record[col] || "???"}</div>
+                                ))}
+                                <button className='table-button'>Edit</button>
+                            </div>
+                        ))
+                    )}
+                    </>
+                )}
             </div>
         </div>
       

@@ -1,25 +1,76 @@
 import '../../App.css'
 import './manage.css'
-import {useState} from 'react'
-import CreatableSelect from 'react-select/creatable'
+import { useState, useEffect } from 'react'
 import Select from 'react-select'
+import { addProduct, getProducts, searchProducts } from '../../utils/api'
 
 export default function Products(){
     const actions = [
         {value: "Add", label: "Add"},
         {value: "Search", label: "Search"}
     ]
-    const options = [
-        {value: "Manager 1", label: "Manager 1"}
-    ]
+
+    const [name, setName] = useState("")
+    const [size, setSize] = useState("")
+    const [price, setPrice] = useState("")
+
+    const [selectedAction, setSelectedAction] = useState(actions[1])
+
+    const [records, setRecords] = useState([])
+    const [columns, setColumns] = useState([])
     
-    const [selected, setSelected] = useState(null)
+   useEffect(() => {
+           async function loadProducts() {
+               let table = []
+               table = await getProducts()
+               if (table.length > 0) { 
+                   setRecords(table)
+                   setColumns(Object.keys(table[0]))
+               } else {
+                   setRecords([])
+                   setColumns([])
+               }
+           }
+           loadProducts()
+       }, [])
+       
+const handleButton = async () => {
+        const data = { name, price, size }
+        console.log("clicked")
+        try {
+            if (selectedAction?.value === "Add") {
+                const addResponse = await addProduct(data)
 
-    const [selectedAction, setSelectedAction] = useState("Search")
+                setName('')
+                setPrice('')
+                setSize('')
+                
+                const updatedProducts = await getProducts()
 
+                setRecords(updatedProducts)
+                setColumns(Object.keys(updatedProducts[0]))
+            }
+
+            if (selectedAction?.value === "Search") {
+                console.log("Searching Product...", data)
+                const result = await searchProducts(data)
+                console.log("Search Results:", result)
+
+                setName('')
+                if (result.length > 0) {
+                    setRecords(result)
+                    setColumns(Object.keys(result[0]))
+                } else {
+                    setRecords([])
+                    setColumns([])
+                }
+            }
+        } catch (error) {
+            console.error("Error executing action:", error)
+            alert("An error occurred while fulfilling the request.")
+        }
+    }
     
-   
-
     return(
         <div className='content'>
             <div><h2>Products</h2></div>
@@ -32,49 +83,59 @@ export default function Products(){
                 isClearable
                 placeholder="Select action..."
                 />
-                <CreatableSelect
-                className="nameSelect"
-                options={options}
-                value={selected}
-                onChange={setSelected}
-                isClearable
-                placeholder="Name"
-                />
+                <>
+                    <label>Product Name:</label>
+                    <input
+                    value = {name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter product..."
+                    />
+                </>
+                {selectedAction?.value === "Add" && (
+                    <>
+                        <label>Size:</label>
+                        <input
+                            value={size}
+                            onChange={(e) => setSize(e.target.value)}
+                            placeholder="Enter size..."
+                        />
+                    
+                        <label>Price:</label>
+                        <input
+                            value={price}
+                            onChange={(e) => setPrice(e.target.value)}
+                            placeholder="Enter price..."
+                        />
+                    </>
+                )}
                 
-                <button className="input-button">Proceed</button>
+                <button className="input-button" onClick={handleButton}>Proceed</button>
             </div>
             
-            <div className="manage-table-content">
-                <table className="manage-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Product</th>
-                            <th>Starting Weight</th>
-                            <th>Ending Weight</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>Pork</td>
-                            <td>10</td>
-                            <td>10</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>Beef</td>
-                            <td>5</td>
-                            <td>10</td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>Chicken</td>
-                            <td>8</td>
-                            <td>10</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div className="table-container">
+                {columns.length === 0 ? (
+                    <div> No records found</div>
+                ) : (
+                    <>
+                    <div className='table-header'>
+                        {columns.map((col, index) => (
+                            <div className="table-data" key={index}>{col}</div>
+                        ))}
+                    </div>
+                    {records.length === 0 ? (
+                        <div></div>
+                    ) : (
+                        records.map((record, rowIndex) => (
+                            <div className='table-row' key={rowIndex}>
+                                {columns.map((col, colIndex) => (
+                                    <div key={colIndex}>{record[col] || "???"}</div>
+                                ))}
+                                <button className='table-button'>Edit</button>
+                            </div>
+                        ))
+                    )}
+                    </>
+                )}
             </div>
         </div>
       

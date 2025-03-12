@@ -345,29 +345,36 @@ app.post("/api/manage-add-suppliers", async(req, res) => {
     res.status(500).json({ message: "Internal server error" })
   }
 })
+
 //Manage - Employees
-app.post("/api/manage-add-employee", async(req, res) => {
-  const { name, contact } = req.body
+app.post("/api/manage-add-employee", async (req, res) => {
+  const { name, contact } = req.body;
 
-  try{
-    await db.query("START TRANSACTION")
+  try {
+    await db.query("START TRANSACTION");
 
-    const [nameResult] = await db.query("SELECT * FROM employee WHERE name = ?", [name])
-    const exists = nameResult.length > 0
+    const [nameResult] = await db.query("SELECT * FROM employee WHERE name = ?", [name]);
+    const exists = nameResult.length > 0;
 
-    if(exists){
-      await db.query("ROLLBACK")
-      return res.status(400).json({message: "Employee already exists!"})
+    if (exists) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "Employee already exists!" });
     }
 
-    await db.query("INSERT INTO employee (name, contact) VALUES (?,?)", [name, contact])
+    await db.query("INSERT INTO employee (name, contact) VALUES (?, ?)", [name, contact]);
 
-    await db.query("COMMIT")
+    await db.query("COMMIT");
+
+
+    return res.status(201).json({ success: true, message: "Employee added successfully!" });
+
   } catch (error) {
-    console.error("Error adding employee:", error)
-    res.status(500).json({ message: "Internal server error" })
+    await db.query("ROLLBACK");
+    console.error("Error adding employee:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
-})
+});
+
 
 app.get("/api/manage-get-employee", async (req, res) =>{
   try {
@@ -424,8 +431,6 @@ app.post("/api/manage-add-outlet", async (req, res) => {
 
 app.get("/api/manage-get-outlet", async (req, res) =>{
   try {
-    await db.query("START TRANSACTION")
-
     const [getOutlets] = await db.query("SELECT * FROM branch")
     res.status(200).json(getOutlets)
   } catch (error) {
@@ -438,8 +443,6 @@ app.get("/api/manage-search-outlet", async(req, res) => {
   const { location } = req.query
 
   try {
-    await db.query("START TRANSACTION")
-
     const [searchOutlet] = await db.query("SELECT * FROM branch WHERE location = ?", [location])
 
     res.status(200).json(searchOutlet)
@@ -453,22 +456,16 @@ app.get("/api/manage-search-outlet", async(req, res) => {
 //Manage - Products
 
 app.post("/api/manage-add-product", async(req, res) => {
-  const { product_name, product_size, quantity, price } = req.body
+  const { name, size, price } = req.body
 
   try{
     await db.query("START TRANSACTION")
 
-    const [productResult] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
-    const exists = productResult.length > 0
-
-    if(exists){
-      await db.query("ROLLBACK")
-      return res.status(400).json({message: "Product already exists!"})
-    }
-
-    await db.query("INSERT INTO product (product_name, product_size, quantity, price) VALUES (?,?,?,?)", [product_name, product_size, quantity, price])
+    await db.query("INSERT INTO Product_details (product_name, size, price) VALUES (?,?,?)", [name,size,price])
 
     await db.query("COMMIT")
+    
+    return res.status(201).json({ success: true, message: "Product added successfully!" });
   } catch (error) {
     console.error("Error adding product:", error)
     res.status(500).json({ message: "Internal server error" })
@@ -479,7 +476,7 @@ app.get("/api/manage-get-product", async (req, res) =>{
   try {
     await db.query("START TRANSACTION")
 
-    const [getProducts] = await db.query("SELECT * FROM product")
+    const [getProducts] = await db.query("SELECT * FROM Product_details")
     res.status(200).json(getProducts)
   } catch (error) {
     console.error("Error no products!", error)
@@ -488,12 +485,12 @@ app.get("/api/manage-get-product", async (req, res) =>{
 })
 
 app.get("/api/manage-search-product", async(req, res) => {
-  const { product_name, product_size } = req.query
+  const { name } = req.query
 
   try {
     await db.query("START TRANSACTION")
 
-    const [searchProduct] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
+    const [searchProduct] = await db.query("SELECT * FROM Product_details WHERE product_name = ?", [ name ])
 
     res.status(200).json(searchProduct)
   }
@@ -506,14 +503,14 @@ app.get("/api/manage-search-product", async(req, res) => {
 
 //Manage - Items
 app.post("/api/manage-add-item", async(req, res) => {
-  const { product_name, product_size, quantity, price } = req.body
+  const { name, size, price } = req.body
 
   try
 
   {
     await db.query("START TRANSACTION")
 
-    const [productResult] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
+    const [productResult] = await db.query("SELECT * FROM Product_details WHERE product_name = ?", [name])
     const exists = productResult.length > 0
 
     if(exists){
@@ -521,7 +518,7 @@ app.post("/api/manage-add-item", async(req, res) => {
       return res.status(400).json({message: "Product already exists!"})
     }
 
-    await db.query("INSERT INTO product (product_name, product_size, quantity, price) VALUES (?,?,?,?)", [product_name, product_size, quantity, price])
+    await db.query("INSERT INTO Product_details (product_name, size, price) VALUES (?,?,?)", [name, size, price])
 
     await db.query("COMMIT")
   }
@@ -560,7 +557,58 @@ app.get("/api/manage-search-item", async(req, res) => {
   }
 })
 
+// Manage - Client
 
+app.get("/api/manage-get-clients", async(req, res) => {
+  try{
+    const [getClients] = await db.query("SELECT * FROM client")
+
+    res.status(200).json(getClients)
+  } catch (error) {
+    console.error("Error, retrieving clients", error)
+    res.status(500),json({data: []})
+  }
+})
+
+app.get("/api/manage-search-client", async(req, res) => {
+  const { name } = req.query
+  try{
+    const [searchClient] = await db.query("SELECT * FROM client WHERE name = ?", [name])
+
+    res.status(200).json(searchClient)
+  } catch (error) {
+    console.error("Error, client not found!", error)
+    res.status(500).json({data: []})
+  }
+})
+
+app.post("/api/manage-add-client", async (req, res) => {
+  const { name, contact } = req.body
+
+  try {
+    await db.query("START TRANSACTION")
+
+    const [nameResult] = await db.query("SELECT * FROM client WHERE name = ?", [name])
+    const exists = nameResult.length > 0
+
+    if (exists) {
+      await db.query("ROLLBACK")
+      return res.status(400).json({ message: "Client already exists!" })
+    }
+
+    await db.query("INSERT INTO client (name, contact) VALUES (?, ?)", [name, contact])
+
+    await db.query("COMMIT")
+
+
+    return res.status(201).json({ success: true, message: "Client added successfully!" })
+
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error adding client:", error)
+    return res.status(500).json({ success: false, message: "Internal server error" })
+  }
+})
 
 //Inventory - Stalls Inventory
 app.get("/api/inventory-stalls-inventory", async (req, res) => {
