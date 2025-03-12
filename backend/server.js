@@ -54,7 +54,7 @@ app.post("/api/process-production", async (req, res) =>{
 
 // Process - Delivery
 app.post("/api/process-delivery", async (req, res) => {
-  const { type, target, location, order_items, date, quantity, price} = req.body;
+  const { type, target, location, order_items, date, quantity, price } = req.body;
   const now = new Date().toISOString();
 
   console.log("Request body:", req.body);
@@ -63,7 +63,9 @@ app.post("/api/process-delivery", async (req, res) => {
     await db.query("START TRANSACTION");
 
     let clientId = null;
+    let branchId = null;
     let orderId = null;
+    let orderDetailsId = null;
 
     if (type === "Client") {
       console.log("Checking client:", target);
@@ -78,49 +80,66 @@ app.post("/api/process-delivery", async (req, res) => {
         clientId = addClient.insertId;
         console.log("New client ID:", clientId);
       }
-    }
-
-    if (type === "Outlet") {
+    } else if (type === "Outlet") {
       console.log("Checking branch:", target);
-      const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE name = ?", [target]);
+      const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [target]);
       console.log("Branch result:", branchResult);
 
       if (branchResult.length > 0) {
         branchId = branchResult[0].branch_id;
         console.log("Branch ID found:", branchId);
       } else {
-        const [addBranch] = await db.query("INSERT INTO branch (name) VALUES (?)", [target]);
+        const [addBranch] = await db.query("INSERT INTO branch (location) VALUES (?)", [target]);
         branchId = addBranch.insertId;
         console.log("New branch ID:", branchId);
       }
     }
 
-    if (!clientId) {
-      console.error("Client ID is not provided");
-      throw new Error("Client must be provided");
+    if (!clientId && !branchId) {
+      console.error("Client or Branch ID is not provided");
+      throw new Error("Client or Branch must be provided");
     }
 
+    // Ensure the inventory item exists
+    const [inventoryResult] = await db.query("SELECT inventory_id FROM inventory WHERE inventory_id = ?", [order_items]);
+    if (inventoryResult.length === 0) {
+      throw new Error("Inventory item does not exist");
+    }
+
+    const subtotal = quantity * price;
+    const [addOrderDetails] = await db.query(
+      `INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)`,
+
+      [order_items, quantity, subtotal]
+    );
+    orderDetailsId = addOrderDetails.insertId;
+    console.log("New order details ID:", orderDetailsId);
+
     const [addOrder] = await db.query(
-      `INSERT INTO orders (manager_id, date) VALUES (?, ?)`,
-      [null, date] // Assuming manager_id is null for now
+      `INSERT INTO orders (manager_id, date, order_details) VALUES (?, ?, ?)`,
+
+      [null, date, orderDetailsId] // Assuming manager_id is null for now
     );
     orderId = addOrder.insertId;
     console.log("New order ID:", orderId);
 
-    const [addDelivery] = await db.query(
-      `INSERT INTO delivery (client_id, order_id, location, date) VALUES (?, ?, ?, ?)`,
-      [clientId, orderId, location, date]
-    );
-    const delivery_ref = addDelivery.insertId;
-    console.log("New delivery ID:", delivery_ref);
+    if (clientId) {
+      const [addDelivery] = await db.query(
+        `INSERT INTO delivery (client_id, order_id, location, date) VALUES (?, ?, ?, ?)`,
 
-    
-    subtotal = quantity * price;
-    const [addOrderDetails] = await db.query(
+        [clientId, orderId, location, date]
+      );
+      const delivery_ref = addDelivery.insertId;
+      console.log("New delivery ID:", delivery_ref);
+    } else if (branchId) {
+      const [addDelivery] = await db.query(
+        `INSERT INTO delivery (branch_id, order_id, location, date) VALUES (?, ?, ?, ?)`,
 
-      `INSERT INTO order_details (order_id, product_id, quantity, subtotal) VALUES (?, ?, ?, ?)`,
-      [orderId, order_items, quantity, subtotal]
-    );
+        [branchId, orderId, location, date]
+      );
+      const delivery_ref = addDelivery.insertId;
+      console.log("New delivery ID:", delivery_ref);
+    }
 
     await db.query("COMMIT");
     res.status(201).json({ message: "Delivery process recorded successfully" });
@@ -266,7 +285,7 @@ app.get("/api/get-managers", async (req, res) => {
   try{
     const [getManagers] = await db.query("SELECT * FROM manager" )
 
-    res.status(200).json(getManagers)
+    res.status(200).json(getManagers);
   } catch (error) {
     console.error("Error retrieving managers:", error)
     res.status(500).json({ message: "Internal server error", data: [] });
@@ -275,108 +294,7 @@ app.get("/api/get-managers", async (req, res) => {
 
 
 //Manage - Suppliers
-
-app.get("/api/manage-get-suppliers", async (req,res) => {
-  try{
-    const [getSuppliers] = await db.query("SELECT * FROM supplier")
-    res.status(200).json(getSuppliers)
-  } catch (error) {
-    console.error("Error retrieving suppliers:", error)
-    res.status(500).json({message:"Internal server error", data:[]})
-  }
-})
-
-app.get("/api/manage-search-suppliers", async(req, res) => {
-  const { name } = req.query
-
-  try{
-    const [searchSupplier] = await db.query("SELECT * FROM supplier WHERE name = ?", [name])
-    if (searchSupplier.length > 0){
-      res.status(200).json(searchSupplier)
-    } else {
-      res.status(404).json({ message: "Supplier not found", data: []})
-    }
-  } catch (error) {
-    console.error("Error searching supplier:", error)
-    res.status(500).json({data: []})
-  }
-})
-
-app.post("/api/manage-add-suppliers", async(req, res) => {
-  const { name, contact, address } = req.body
-
-  try{
-    await db.query("START TRANSACTION")
-
-    const [nameResult] = await db.query("SELECT * FROM supplier WHERE name = ?", [name])
-    const exists = nameResult.length > 0
-
-    if(exists){
-      await db.query("ROLLBACK")
-      return res.status(400).json({ message: "Supplier already exists!" })
-    }
-
-    await db.query("INSERT INTO supplier (name, contact, address) VALUES (?,?,?)", [name, contact, address])
-
-    await db.query("COMMIT")
-
-    res.status(201).json({ message: "Supplier added successfully!" })
-  } catch (error) {
-    console.error("Error adding supplier:", error)
-    res.status(500).json({ message: "Internal server error" })
-  }
-})
-
 //Manage - Employees
-app.post("/api/manage-add-employee", async(req, res) => {
-  const { name, contact } = req.body
-
-  try{
-    await db.query("START TRANSACTION")
-
-    const [nameResult] = await db.query("SELECT * FROM employee WHERE name = ?", [name])
-    const exists = nameResult.length > 0
-
-    if(exists){
-      await db.query("ROLLBACK")
-      return res.status(400).json({message: "Employee already exists!"})
-    }
-
-    await db.query("INSERT INTO employee (name, contact) VALUES (?,?)", [name, contact])
-
-    await db.query("COMMIT")
-  } catch (error) {
-    console.error("Error adding employee:", error)
-    res.status(500).json({ message: "Internal server error" })
-  }
-})
-
-app.get("/api/manage-get-employee", async (req, res) =>{
-  try {
-    await db.query("START TRANSACTION")
-
-    const [getEmployees] = await db.query("SELECT * FROM employee")
-    res.status(200).json(getEmployees)
-  } catch (error) {
-    console.error("Error no employees!", error)
-    res.status(500).json({data: []})
-  }
-})
-
-app.get("/api/manage-search-employee", async(req, res) => {
-  const { name } = req.query
-
-  try {
-    await db.query("START TRANSACTION")
-
-    const [searchEmployee] = await db.query("SELECT * FROM employee WHERE name = ?", [name])
-
-    res.status(200).json(searchEmployee)
-  } catch (error){
-    console.error("Error, employee not found! ", error)
-    res.status(500).json({data: []})
-  }
-})
 //Manage - Outlets
 //Manage - Products
 //Manage - Items
@@ -456,9 +374,9 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     );
     const inventoryId = addInventory.insertId;
 
-    // Corrected: Insert into product table using product_id (not product_name)
+    // Corrected: Insert into product table using product_id for product_name
     await db.query(
-      `INSERT INTO product (product_id, product_size, quantity, price) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO product (product_name, product_size, quantity, price) VALUES (?, ?, ?, ?)`,
       [productId, product_size, quantity, price]
     );
 
