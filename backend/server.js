@@ -294,10 +294,274 @@ app.get("/api/get-managers", async (req, res) => {
 
 
 //Manage - Suppliers
+
+app.get("/api/manage-get-suppliers", async (req,res) => {
+  try{
+    const [getSuppliers] = await db.query("SELECT * FROM supplier")
+    res.status(200).json(getSuppliers)
+  } catch (error) {
+    console.error("Error retrieving suppliers:", error)
+    res.status(500).json({message:"Internal server error", data:[]})
+  }
+})
+
+app.get("/api/manage-search-suppliers", async(req, res) => {
+  const { name } = req.query
+
+  try{
+    const [searchSupplier] = await db.query("SELECT * FROM supplier WHERE name = ?", [name])
+    if (searchSupplier.length > 0){
+      res.status(200).json(searchSupplier)
+    } else {
+      res.status(404).json({ message: "Supplier not found", data: []})
+    }
+  } catch (error) {
+    console.error("Error searching supplier:", error)
+    res.status(500).json({data: []})
+  }
+})
+
+app.post("/api/manage-add-suppliers", async(req, res) => {
+  const { name, contact, address } = req.body
+
+  try{
+    await db.query("START TRANSACTION")
+
+    const [nameResult] = await db.query("SELECT * FROM supplier WHERE name = ?", [name])
+    const exists = nameResult.length > 0
+
+    if(exists){
+      await db.query("ROLLBACK")
+      return res.status(400).json({ message: "Supplier already exists!" })
+    }
+
+    await db.query("INSERT INTO supplier (name, contact, address) VALUES (?,?,?)", [name, contact, address])
+
+    await db.query("COMMIT")
+
+    res.status(201).json({ message: "Supplier added successfully!" })
+  } catch (error) {
+    console.error("Error adding supplier:", error)
+    res.status(500).json({ message: "Internal server error" })
+  }
+})
 //Manage - Employees
+app.post("/api/manage-add-employee", async(req, res) => {
+  const { name, contact } = req.body
+
+  try{
+    await db.query("START TRANSACTION")
+
+    const [nameResult] = await db.query("SELECT * FROM employee WHERE name = ?", [name])
+    const exists = nameResult.length > 0
+
+    if(exists){
+      await db.query("ROLLBACK")
+      return res.status(400).json({message: "Employee already exists!"})
+    }
+
+    await db.query("INSERT INTO employee (name, contact) VALUES (?,?)", [name, contact])
+
+    await db.query("COMMIT")
+  } catch (error) {
+    console.error("Error adding employee:", error)
+    res.status(500).json({ message: "Internal server error" })
+  }
+})
+
+app.get("/api/manage-get-employee", async (req, res) =>{
+  try {
+    await db.query("START TRANSACTION")
+
+    const [getEmployees] = await db.query("SELECT * FROM employee")
+    res.status(200).json(getEmployees)
+  } catch (error) {
+    console.error("Error no employees!", error)
+    res.status(500).json({data: []})
+  }
+})
+
+app.get("/api/manage-search-employee", async(req, res) => {
+  const { name } = req.query
+
+  try {
+    await db.query("START TRANSACTION")
+
+    const [searchEmployee] = await db.query("SELECT * FROM employee WHERE name = ?", [name])
+
+    res.status(200).json(searchEmployee)
+  } catch (error){
+    console.error("Error, employee not found! ", error)
+    res.status(500).json({data: []})
+  }
+})
+
 //Manage - Outlets
+app.post("/api/manage-add-outlet", async (req, res) => {
+  const { location } = req.body;
+
+  try {
+    await db.query("START TRANSACTION");
+
+    const [locationResult] = await db.query("SELECT * FROM branch WHERE location = ?", [location]);
+    const exists = locationResult.length > 0;
+
+    if (exists) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "Outlet already exists!" });
+    }
+
+    await db.query("INSERT INTO branch (location) VALUES (?)", [location]);
+
+    await db.query("COMMIT");
+    res.status(201).json({ message: "Outlet added successfully!" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error adding outlet:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.get("/api/manage-get-outlet", async (req, res) =>{
+  try {
+    await db.query("START TRANSACTION")
+
+    const [getOutlets] = await db.query("SELECT * FROM branch")
+    res.status(200).json(getOutlets)
+  } catch (error) {
+    console.error("Error no outlets!", error)
+    res.status(500).json({data: []})
+  }
+})
+
+app.get("/api/manage-search-outlet", async(req, res) => {
+  const { location } = req.query
+
+  try {
+    await db.query("START TRANSACTION")
+
+    const [searchOutlet] = await db.query("SELECT * FROM branch WHERE location = ?", [location])
+
+    res.status(200).json(searchOutlet)
+  } catch (error){
+    console.error("Error, outlet not found! ", error)
+    res.status(500).json({data: []})
+  }
+})
+
+
 //Manage - Products
+
+app.post("/api/manage-add-product", async(req, res) => {
+  const { product_name, product_size, quantity, price } = req.body
+
+  try{
+    await db.query("START TRANSACTION")
+
+    const [productResult] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
+    const exists = productResult.length > 0
+
+    if(exists){
+      await db.query("ROLLBACK")
+      return res.status(400).json({message: "Product already exists!"})
+    }
+
+    await db.query("INSERT INTO product (product_name, product_size, quantity, price) VALUES (?,?,?,?)", [product_name, product_size, quantity, price])
+
+    await db.query("COMMIT")
+  } catch (error) {
+    console.error("Error adding product:", error)
+    res.status(500).json({ message: "Internal server error" })
+  }
+})
+
+app.get("/api/manage-get-product", async (req, res) =>{
+  try {
+    await db.query("START TRANSACTION")
+
+    const [getProducts] = await db.query("SELECT * FROM product")
+    res.status(200).json(getProducts)
+  } catch (error) {
+    console.error("Error no products!", error)
+    res.status(500).json({data: []})
+  }
+})
+
+app.get("/api/manage-search-product", async(req, res) => {
+  const { product_name, product_size } = req.query
+
+  try {
+    await db.query("START TRANSACTION")
+
+    const [searchProduct] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
+
+    res.status(200).json(searchProduct)
+  }
+  catch (error){
+    console.error("Error, product not found! ", error)
+    res.status(500).json({data: []})
+  }
+})
+
+
 //Manage - Items
+app.post("/api/manage-add-item", async(req, res) => {
+  const { product_name, product_size, quantity, price } = req.body
+
+  try
+
+  {
+    await db.query("START TRANSACTION")
+
+    const [productResult] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
+    const exists = productResult.length > 0
+
+    if(exists){
+      await db.query("ROLLBACK")
+      return res.status(400).json({message: "Product already exists!"})
+    }
+
+    await db.query("INSERT INTO product (product_name, product_size, quantity, price) VALUES (?,?,?,?)", [product_name, product_size, quantity, price])
+
+    await db.query("COMMIT")
+  }
+  catch (error) {
+    console.error("Error adding product:", error)
+    res.status(500).json({ message: "Internal server error" })
+  }
+})
+
+app.get("/api/manage-get-item", async (req, res) =>{
+  try {
+    await db.query("START TRANSACTION")
+
+    const [getItems] = await db.query("SELECT * FROM product")
+    res.status(200).json(getItems)
+  } catch (error) {
+    console.error("Error no items!", error)
+    res.status(500).json({data: []})
+  }
+})
+
+app.get("/api/manage-search-item", async(req, res) => {
+  const { product_name, product_size } = req.query
+
+  try
+
+  {
+    await db.query("START TRANSACTION")
+
+    const [searchItem] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
+
+    res.status(200).json(searchItem)
+  } catch (error){
+    console.error("Error, item not found! ", error)
+    res.status(500).json({data: []})
+  }
+})
+
+
+
 //Inventory - Stalls Inventory
 app.get("/api/inventory-stalls-inventory", async (req, res) => {
   const { location } = req.query;
