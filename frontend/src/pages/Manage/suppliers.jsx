@@ -1,23 +1,83 @@
 import '../../App.css'
 import './manage.css'
-import {useState} from 'react'
-import CreatableSelect from 'react-select/creatable'
+import {useState, useEffect} from 'react'
 import Select from 'react-select'
+import { fetchSuppliers, addSuppliers, searchSuppliers } from '../../utils/api'
 
-export default function SupplierS(){
+export default function Suppliers(){
     const actions = [
         {value: "Add", label: "Add"},
         {value: "Search", label: "Search"}
     ]
-    const options = [
-        {value: "Manager 131231dsa", label: "Manager 1123123213"}
-    ]
 
-    const [selected, setSelected] = useState(null)
+    const [selectedAction, setSelectedAction] = useState(actions[1])
 
-    const [selectedAction, setSelectedAction] = useState("Search")
-
+    const [name, setName] = useState("")
     const [contact, setContact] = useState("")
+ 
+    const [records, setRecords] = useState([])
+    const [columns, setColumns] = useState([])
+    
+    useEffect(() => {
+        async function loadSuppliers() {
+            let table = []
+            table = await fetchSuppliers()
+            if (table.length > 0) { 
+                setRecords(table)
+                setColumns(Object.keys(table[0]))
+            } else {
+                setRecords([])
+                setColumns([])
+            }
+        }
+        loadSuppliers()
+    }, [])
+
+    
+
+    const handleClick = async () =>{
+        const data = {name, contact, address}
+        try {
+            if (selectedAction?.value === "Add"){
+                const response = await addSuppliers(data)
+
+                if(response.succes === false) {
+                    alert(response.message)
+                    return
+                }
+
+                setContact('')
+                setName('')
+
+            const updatedTable = await fetchSuppliers()
+                if (updatedTable.length > 0) {
+                    setRecords(updatedTable)
+                    setColumns(Object.keys(updatedTable[0]))
+                } else {
+                    setRecords([])
+                    setColumns([])
+                }
+            }
+
+            if (selectedAction?.value === "Search") {
+                const result = await searchSuppliers(data)
+
+                setName('')
+
+                if (result.length > 0) {
+                    setRecords(result)
+                    setColumns(Object.keys(result[0]))
+                } else {
+                    setRecords([])
+                    setColumns([])
+                }
+            }
+        } catch (error) {
+            console.error("Error executing action:", error)
+            alert("An error occurred while trying to fulfill the request.")
+        }
+    }
+    
 
     return(
         <div className='content'>
@@ -31,61 +91,61 @@ export default function SupplierS(){
                 isClearable
                 placeholder="Select action..."
                 />
-                <CreatableSelect
-                className="nameSelect"
-                options={options}
-                value={selected}
-                onChange={setSelected}
-                isClearable
-                placeholder="Name"
-                />
+                <>
+                    <label>Name:</label>
+                    <input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Enter name..."
+                    />
+                </>
+                
                 {selectedAction?.value === "Add" && (
-                    <div>
+                    <>
                         <label>Contact:</label>
                         <input
-                            type="text" 
                             value={contact} 
                             onChange={(e) => setContact(e.target.value)} 
-                            placeholder="Enter contact"
+                            placeholder="Enter contact..."
                         />
-                    </div>
+                
+                        <label>Address:</label>
+                        <input
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Enter name..."
+                        />
+                    </>
                 )}
-                <button className="input-button">Proceed</button>
+                <button className="input-button" onClick={handleClick}>Proceed</button>
             </div>
             
             <div className="manage-table-content">
                 <table className="manage-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Product</th>
-                            <th>Starting Weight</th>
-                            <th>Ending Weight</th>
+                            {columns.map((column, index) => (
+                                <th key={index}>{column.replace(/_/g, ' ')}</th>
+                            ))}
                         </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>Pork</td>
-                            <td>10</td>
-                            <td>10</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>Beef</td>
-                            <td>5</td>
-                            <td>10</td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>Chicken</td>
-                            <td>8</td>
-                            <td>10</td>
-                        </tr>
+                    </thead>
+                    <tbody>
+                        {records.length > 0 ? (
+                            records.map((record, index) => (
+                                <tr key={index}>
+                                    {columns.map((column, colIndex) => (
+                                        <td key={colIndex}>{record[column]}</td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={columns.length || 1}>No records found</td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>
         </div>
-      
     )
 }

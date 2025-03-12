@@ -1,41 +1,43 @@
-.manage-form-container{
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    width: 100%;
-    gap: 20px;
-    align-items: center;
-    margin: 0px;
-}
+    .manage-form-container{
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        width: 100vh;
+        gap: 20px;
+        align-items: center;
+        margin: 0px;
+    }
 
-.manage-table-content{
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    margin: 20px;
-    width: 100%;
-    height: 80%;
-    gap: 0; 
-}
-.manage-table{
-    margin: 10px;
-    border-collapse: collapse;
-    flex-grow: 1;
-    width: 100%;
-    height: 80%;
-    border-spacing: 0;
-    table-layout: auto;
-}
-.manage-table td{
-    border: none;
-    border-bottom: 1px solid rgb(187, 184, 184);
-    text-align: center;
-}
-.manage-table th{
-    border: 1px solid black;
-    padding: 0px;
-}
+    .manage-table-content{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        margin: 10px;
+        width: 100%;
+        height: 100%;
+        gap: 0; 
+    }
+    .manage-table{
+        margin: 10px;
+        border-collapse: collapse;
+        width: 100%;
+        height: 80%;
+        border-spacing: 0;
+        table-layout: auto;
+    }
+    .manage-table td{
+        border: none;
+        border-bottom: 1px solid rgb(187, 184, 184);
+        text-align: center;
+    }
+    .manage-table th{
+        border: 1px solid black;
+        padding: 0px;
+    }
+    .manage-table tr{
+        height: 10px;
+    }
 
-.nameSelect{
-    width:400px;
-}
+    .nameSelect{
+        width:400px;
+    }
