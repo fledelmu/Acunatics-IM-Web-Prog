@@ -14,7 +14,8 @@ export default function Suppliers(){
 
     const [name, setName] = useState("")
     const [contact, setContact] = useState("")
- 
+    const [address, setAddress] = useState("")
+
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
     
@@ -113,38 +114,37 @@ export default function Suppliers(){
                         <input
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        placeholder="Enter name..."
+                        placeholder="Enter address..."
                         />
                     </>
                 )}
                 <button className="input-button" onClick={handleClick}>Proceed</button>
             </div>
             
-            <div className="manage-table-content">
-                <table className="manage-table">
-                    <thead>
-                        <tr>
-                            {columns.map((column, index) => (
-                                <th key={index}>{column.replace(/_/g, ' ')}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {records.length > 0 ? (
-                            records.map((record, index) => (
-                                <tr key={index}>
-                                    {columns.map((column, colIndex) => (
-                                        <td key={colIndex}>{record[column]}</td>
-                                    ))}
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={columns.length || 1}>No records found</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+            <div className="table-container">
+                {columns.length === 0 ? (
+                    <div> No records found</div>
+                ) : (
+                    <>
+                    <div className='table-header'>
+                        {columns.map((col, index) => (
+                            <div className="table-data" key={index}>{col}</div>
+                        ))}
+                    </div>
+                    {records.length === 0 ? (
+                        <div></div>
+                    ) : (
+                        records.map((record, rowIndex) => (
+                            <div className='table-row' key={rowIndex}>
+                                {columns.map((col, colIndex) => (
+                                    <div key={colIndex}>{record[col] || "???"}</div>
+                                ))}
+                                <button className='table-button'>Edit</button>
+                            </div>
+                        ))
+                    )}
+                    </>
+                )}
             </div>
         </div>
     )
