@@ -152,9 +152,78 @@ app.post("/api/process-delivery", async (req, res) => {
 
 
 //Process - Supply
-app.post("/api/process-supply", async (req, res) =>{
+app.post("/api/process-supply", async (req, res) => {
+  const { supplier, item_name, quantity, price, unit } = req.body;
+  const now = new Date().toISOString();
 
-})
+  console.log("Request body:", req.body);
+
+  try {
+    await db.query("START TRANSACTION");
+
+    let supplierId = null;
+    let itemTypeId = null;
+    let itemId = null;
+    let supplyId = null;
+
+    // Check if supplier exists
+    console.log("Checking supplier:", supplier);
+    const [supplierResult] = await db.query("SELECT supplier_id FROM supplier WHERE name = ?", [supplier]);
+    console.log("Supplier result:", supplierResult);
+
+    if (supplierResult.length > 0) {
+      supplierId = supplierResult[0].supplier_id;
+      console.log("Supplier ID found:", supplierId);
+    } else {
+      const [addSupplier] = await db.query("INSERT INTO supplier (name) VALUES (?)", [supplier]);
+      supplierId = addSupplier.insertId;
+      console.log("New supplier ID:", supplierId);
+    }
+
+    // Check if item type exists
+    console.log("Checking item type:", item_name);
+    const [itemTypeResult] = await db.query("SELECT item_type_id FROM item_type WHERE item_name = ?", [item_name]);
+    console.log("Item type result:", itemTypeResult);
+
+    if (itemTypeResult.length > 0) {
+      itemTypeId = itemTypeResult[0].item_type_id;
+      console.log("Item type ID found:", itemTypeId);
+    } else {
+      const [addItemType] = await db.query("INSERT INTO item_type (item_name) VALUES (?)", [item_name]);
+      itemTypeId = addItemType.insertId;
+      console.log("New item type ID:", itemTypeId);
+    }
+
+    // Check if item exists
+    console.log("Checking item:", itemTypeId);
+    const [itemResult] = await db.query("SELECT item_id FROM item WHERE item_type = ?", [itemTypeId]);
+    console.log("Item result:", itemResult);
+
+    if (itemResult.length > 0) {
+      itemId = itemResult[0].item_id;
+      console.log("Item ID found:", itemId);
+    } else {
+      const [addItem] = await db.query("INSERT INTO item (item_type, quantity) VALUES (?, ?)", [itemTypeId, quantity]);
+      itemId = addItem.insertId;
+      console.log("New item ID:", itemId);
+    }
+
+    // Insert into supply table
+    const [addSupply] = await db.query("INSERT INTO supply (supplier_id, date) VALUES (?, ?)", [supplierId, now]);
+    supplyId = addSupply.insertId;
+    console.log("New supply ID:", supplyId);
+
+    // Insert into supply_details table
+    await db.query("INSERT INTO supply_details (supply_id, item_id, unit, quantity, price) VALUES (?, ?, ?, ?, ?)", [supplyId, itemId, unit, quantity, price]);
+
+    await db.query("COMMIT");
+    res.status(201).json({ message: "Supply process recorded successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error processing supply:", error);
+    res.status(500).json({ message: "Error processing supply", error: error.message });
+  }
+});
 
 // Records Tab
 app.get("/api/production-records", async (req, res) => {
@@ -818,9 +887,6 @@ app.post("/api/manage-add-client", async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal server error" })
   }
 })
-app.put("/api/manage-edit-client", async (req, res) => {
-  const { id, name, contact } = req.body;
-
 app.put("/api/manage-edit-client", async (req, res) => {
   const { id, name, contact } = req.body;
 
