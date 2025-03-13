@@ -119,8 +119,8 @@ app.post("/api/process-delivery", async (req, res) => {
 
     // Create order
     const [addOrder] = await db.query(
-      "INSERT INTO orders (manager_id, date, order_details) VALUES (?, ?, ?)",
-      [null, now, orderDetailsId]
+      "INSERT INTO orders (date, order_details) VALUES (?, ?)",
+      [now, orderDetailsId]
     );
     orderId = addOrder.insertId;
 
