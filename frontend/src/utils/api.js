@@ -306,7 +306,7 @@ export const searchItem = async (data) => {
     }
 }
 
-//Inventory - add
+//Inventory 
 
 export const addInventory = async (data) => {
     try{
@@ -324,6 +324,17 @@ export const viewInventory = async () => {
         console.log("Inventory API response:", response.data)
         return response.data
     } catch (error) {
+        console.error("Error retrieving inventory: ", error)
+        return []
+    }
+}
+
+export const viewStallsInv = async () => {
+    try{
+        const response = await axios.get(`${URL}/api/inventory-stalls-inventory`)
+        console.log("Inventory response: ", response.data)
+        return response.data
+    } catch(error){
         console.error("Error retrieving inventory: ", error)
         return []
     }
