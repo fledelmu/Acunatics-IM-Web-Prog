@@ -3,7 +3,7 @@ import './inventory.css'
 import {useState} from 'react'
 
 export default function InvStall(){
-    const [location, setSelectedLocation] = useState("");
+    const [item, setItem] = useState("");
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
     
@@ -11,15 +11,15 @@ export default function InvStall(){
         <div className="content">
             
             <div className="inventory-form-container">
-                <div><h2>Stalls Inventory</h2></div>
+                <div><h2>Supply Inventory</h2></div>
                 <div className="inventory-form">
                     <div>
                         <input
                             className="selection"
-                            value={location}
-                            onChange={setSelectedLocation}
+                            value={item}
+                            onChange={setItem}
                             isClearable
-                            placeholder="Location"
+                            placeholder="Enter item..."
                         />
                     </div>
                     <button className="input-button">Search</button>
