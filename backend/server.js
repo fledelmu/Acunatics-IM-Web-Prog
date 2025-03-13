@@ -152,84 +152,9 @@ app.post("/api/process-delivery", async (req, res) => {
 
 
 //Process - Supply
-<<<<<<< HEAD
-app.post("/api/process-supply", async (req, res) => {
-  const { supplier, item_name, quantity, price, unit } = req.body;
-  const now = new Date().toISOString();
-
-  console.log("Request body:", req.body);
-
-  try {
-    await db.query("START TRANSACTION");
-
-    let supplierId = null;
-    let itemTypeId = null;
-    let itemId = null;
-    let supplyId = null;
-
-    // Check if supplier exists
-    console.log("Checking supplier:", supplier);
-    const [supplierResult] = await db.query("SELECT supplier_id FROM supplier WHERE name = ?", [supplier]);
-    console.log("Supplier result:", supplierResult);
-
-    if (supplierResult.length > 0) {
-      supplierId = supplierResult[0].supplier_id;
-      console.log("Supplier ID found:", supplierId);
-    } else {
-      const [addSupplier] = await db.query("INSERT INTO supplier (name) VALUES (?)", [supplier]);
-      supplierId = addSupplier.insertId;
-      console.log("New supplier ID:", supplierId);
-    }
-
-    // Check if item type exists
-    console.log("Checking item type:", item_name);
-    const [itemTypeResult] = await db.query("SELECT item_type_id FROM item_type WHERE item_name = ?", [item_name]);
-    console.log("Item type result:", itemTypeResult);
-
-    if (itemTypeResult.length > 0) {
-      itemTypeId = itemTypeResult[0].item_type_id;
-      console.log("Item type ID found:", itemTypeId);
-    } else {
-      const [addItemType] = await db.query("INSERT INTO item_type (item_name) VALUES (?)", [item_name]);
-      itemTypeId = addItemType.insertId;
-      console.log("New item type ID:", itemTypeId);
-    }
-
-    // Check if item exists
-    console.log("Checking item:", itemTypeId);
-    const [itemResult] = await db.query("SELECT item_id FROM item WHERE item_type = ?", [itemTypeId]);
-    console.log("Item result:", itemResult);
-
-    if (itemResult.length > 0) {
-      itemId = itemResult[0].item_id;
-      console.log("Item ID found:", itemId);
-    } else {
-      const [addItem] = await db.query("INSERT INTO item (item_type, quantity) VALUES (?, ?)", [itemTypeId, quantity]);
-      itemId = addItem.insertId;
-      console.log("New item ID:", itemId);
-    }
-
-    // Insert into supply table
-    const [addSupply] = await db.query("INSERT INTO supply (supplier_id, date) VALUES (?, ?)", [supplierId, now]);
-    supplyId = addSupply.insertId;
-    console.log("New supply ID:", supplyId);
-
-    // Insert into supply_details table
-    await db.query("INSERT INTO supply_details (supply_id, item_id, unit, quantity, price) VALUES (?, ?, ?, ?, ?)", [supplyId, itemId, unit, quantity, price]);
-
-    await db.query("COMMIT");
-    res.status(201).json({ message: "Supply process recorded successfully" });
-  } catch (error) {
-    await db.query("ROLLBACK");
-    console.error("Error processing supply:", error);
-    res.status(500).json({ message: "Error processing supply", error: error.message });
-  }
-});
-=======
 app.post("/api/process-supply", async (req, res) =>{
 
 })
->>>>>>> 726966e496f4f5052eb8734e0911feeace9945ac
 
 // Records Tab
 app.get("/api/production-records", async (req, res) => {
@@ -572,12 +497,6 @@ app.get("/api/manage-search-product", async(req, res) => {
 app.put("/api/manage-edit-product", async (req, res) => {
   const { id, name, size, price } = req.body;
 
-<<<<<<< HEAD
-=======
-app.put("/api/manage-edit-product", async (req, res) => {
-  const { id, name, size, price } = req.body;
-
->>>>>>> 726966e496f4f5052eb8734e0911feeace9945ac
   if (!id || (!name && !size && !price)) {
     return res.status(400).json({ message: "Product ID and at least one field to update are required" });
   }
@@ -609,11 +528,59 @@ app.put("/api/manage-edit-product", async (req, res) => {
     updateValues.push(id);
 
     const [updateResult] = await db.query(
-<<<<<<< HEAD
       `UPDATE Product_details SET ${updateFields.join(", ")} WHERE product_id = ?`,
-=======
+      updateValues
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Product not found or no changes made" });
+    }
+
+    await db.query("COMMIT");
+    res.status(200).json({ message: "Product updated successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error updating product:", error);
+    res.status(500).json({ message: "Error updating product", error: error.message });
+  }
+});
+
+app.put("/api/manage-edit-product", async (req, res) => {
+  const { id, name, size, price } = req.body;
+
+  if (!id || (!name && !size && !price)) {
+    return res.status(400).json({ message: "Product ID and at least one field to update are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    let updateFields = [];
+    let updateValues = [];
+
+    if (name) {
+      updateFields.push("product_name = ?");
+      updateValues.push(name);
+    }
+    if (size) {
+      updateFields.push("size = ?");
+      updateValues.push(size);
+    }
+    if (price !== undefined) {
+      updateFields.push("price = ?");
+      updateValues.push(price);
+    }
+
+    if (updateFields.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "No valid fields provided for update" });
+    }
+
+    updateValues.push(id);
+
+    const [updateResult] = await db.query(
       "UPDATE Product_details SET ${updateFields.join(", ")} WHERE product_id = ?",
->>>>>>> 726966e496f4f5052eb8734e0911feeace9945ac
       updateValues
     );
 
@@ -690,12 +657,6 @@ app.get("/api/manage-search-item", async(req, res) => {
 app.put("/api/manage-edit-item", async (req, res) => {
   const { id, name, type, unit, price } = req.body;
 
-<<<<<<< HEAD
-=======
-app.put("/api/manage-edit-item", async (req, res) => {
-  const { id, name, type, unit, price } = req.body;
-
->>>>>>> 726966e496f4f5052eb8734e0911feeace9945ac
   if (!id || (!name && !type && !unit && !price)) {
     return res.status(400).json({ message: "Item ID and at least one field to update are required" });
   }
@@ -731,11 +692,7 @@ app.put("/api/manage-edit-item", async (req, res) => {
     updateValues.push(id);
 
     const [updateResult] = await db.query(
-<<<<<<< HEAD
       `UPDATE item_type SET ${updateFields.join(", ")} WHERE item_id = ?`,
-=======
-      "UPDATE item_type SET ${updateFields.join(", ")} WHERE item_id = ?",
->>>>>>> 726966e496f4f5052eb8734e0911feeace9945ac
       updateValues
     );
 
@@ -751,12 +708,64 @@ app.put("/api/manage-edit-item", async (req, res) => {
     console.error("Error updating item:", error);
     res.status(500).json({ message: "Error updating item", error: error.message });
   }
-<<<<<<< HEAD
 });
-=======
+
+app.put("/api/manage-edit-item", async (req, res) => {
+  const { id, name, type, unit, price } = req.body;
+
+  if (!id || (!name && !type && !unit && !price)) {
+    return res.status(400).json({ message: "Item ID and at least one field to update are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    let updateFields = [];
+    let updateValues = [];
+
+    if (name) {
+      updateFields.push("item_name = ?");
+      updateValues.push(name);
+    }
+    if (type) {
+      updateFields.push("item_type = ?");
+      updateValues.push(type);
+    }
+    if (unit) {
+      updateFields.push("unit = ?");
+      updateValues.push(unit);
+    }
+    if (price !== undefined) {
+      updateFields.push("price = ?");
+      updateValues.push(price);
+    }
+
+    if (updateFields.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "No valid fields provided for update" });
+    }
+
+    updateValues.push(id);
+
+    const [updateResult] = await db.query(
+      "UPDATE item_type SET ${updateFields.join(", ")} WHERE item_id = ?",
+      updateValues
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Item not found or no changes made" });
+    }
+
+    await db.query("COMMIT");
+    res.status(200).json({ message: "Item updated successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error updating item:", error);
+    res.status(500).json({ message: "Error updating item", error: error.message });
+  }
 })
 
->>>>>>> 726966e496f4f5052eb8734e0911feeace9945ac
 // Manage - Client
 
 app.get("/api/manage-get-clients", async(req, res) => {
@@ -812,10 +821,6 @@ app.post("/api/manage-add-client", async (req, res) => {
 app.put("/api/manage-edit-client", async (req, res) => {
   const { id, name, contact } = req.body;
 
-<<<<<<< HEAD
-  if (!id || (!name && !contact)) {
-    return res.status(400).json({ message: "Client ID and at least one field to update are required" });
-=======
 app.put("/api/manage-edit-client", async (req, res) => {
   const { id, name, contact } = req.body;
 
@@ -868,13 +873,8 @@ app.put("/api/manage-edit-client", async (req, res) => {
 app.get("/api/inventory-stalls-inventory", async (req, res) => {
   const { location } = req.query;
 
-  // Log the received location parameter
-  console.log("Received location:", location);
-
-  // Check if location is provided
-  if (!location) {
-    return res.status(400).json({ message: "Location is required" });
->>>>>>> 726966e496f4f5052eb8734e0911feeace9945ac
+  if (!id || (!name && !contact)) {
+    return res.status(400).json({ message: "Client ID and at least one field to update are required" });
   }
 
   try {
