@@ -1,6 +1,6 @@
 import '../../App.css'
 import './inventory.css'
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import  Select  from 'react-select'
 import { addInventory, viewInventory } from '../../utils/api'
 
@@ -19,6 +19,21 @@ export default function InvProduction(){
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
 
+    useEffect(() => {
+            async function loadInventory() {
+                let table = []
+                table = await viewInventory()
+                if (table.length > 0) { 
+                    setRecords(table)
+                    setColumns(Object.keys(table[0]))
+                } else {
+                    setRecords([])
+                    setColumns([])
+                }
+            }
+            loadInventory()
+        }, [])
+        
     const handleClick = async () => {
         console.log("clicked")
 
@@ -30,7 +45,7 @@ export default function InvProduction(){
         const data = {
             product: product,
             size: size.value,
-            quantity: quantity
+            quantity: Number(quantity)
         }
 
         try{
