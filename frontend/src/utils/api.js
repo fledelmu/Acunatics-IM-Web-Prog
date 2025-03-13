@@ -273,7 +273,13 @@ export const searchItem = async (data) => {
 }
 
 export const editItem = async (data) => {
-    
+    try{
+        const response = await axios.get(`${URL}/api/manage-`)
+        return response.data
+    } catch (error) {
+        console.error("Error editing item: ", error)
+        return []
+    }
 }
 //Inventory 
 
