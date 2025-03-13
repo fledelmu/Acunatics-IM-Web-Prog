@@ -272,7 +272,9 @@ export const searchItem = async (data) => {
     }
 }
 
-export const editItem = async (data)
+export const editItem = async (data) => {
+    
+}
 //Inventory 
 
 export const addInventory = async (data) => {
