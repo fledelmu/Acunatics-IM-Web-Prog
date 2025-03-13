@@ -610,34 +610,18 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
       [product_name, size]
     );
 
-    let productDId;
+    const productDId = productDetailsResult[0].product_id;
 
-    if (productDetailsResult.length > 0) {
-      productDId = productDetailsResult[0].product_id;
-    } else {
-      // Insert into Product_details
-      const [addProductDetails] = await db.query(
-        "INSERT INTO Product_details (product_name, size) VALUES (?, ?)",
-        [product_name, size]
-      );
-      productDId = addProductDetails.insertId;
-      console.log(`Inserted new product details with ID: ${productId}`);
-    }
-
-
-    // Ensure `productId` is valid before proceeding
-    if (!productDId) {
+    if (productDetailsResult.length === 0) {
       return res.status(400).json({ message: "Failed to retrieve or insert product." });
-    }
-
+    } 
 
     const [addProduct] = await db.query("INSERT INTO product (product_name, quantity) VALUES (?,?)", [productDId, quantity])
 
-    const productId = addProduct.insertId
     // Insert into inventory
     const [addInventory] = await db.query(
       `INSERT INTO inventory (product, date) VALUES (?, ?)`,
-      [productId, now]
+      [productDId, now]
     );
     
     console.log(`Inserted into inventory with ID: ${addInventory.insertId}`);
@@ -646,9 +630,9 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     await db.query(
       `INSERT INTO product (product_name, quantity) VALUES (?, ?) 
        ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)`,
-      [productId, quantity]
+      [productDId, quantity]
     );
-    console.log(`Inserted/Updated product table with ID: ${productId}`);
+    console.log(`Inserted/Updated product table with ID: ${productDId}`);
 
     await db.query("COMMIT");
     res.status(201).json({ message: "Production inventory added successfully" });
@@ -658,9 +642,6 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     res.status(500).json({ message: "Error adding production inventory", error: error.message });
   }
 });
-
-
-
 
 app.get("/api/inventory-view-production-inventory", async (req, res) =>{
   try{

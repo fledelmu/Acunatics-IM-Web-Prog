@@ -34,42 +34,45 @@ export default function InvProduction(){
             loadInventory()
         }, [])
         
-    const handleClick = async () => {
-        console.log("clicked")
-
-        if (!product || !size || !quantity) {
-            console.error("Missing required fields");
-            return;
-        }
-
-        const data = {
-            product: product,
-            size: size?.value || "",  
-            quantity: Number(quantity)
-        }
-
-        try{
-            const response = await addInventory(data)
-
-            setProduct("")
-            setQuantity("")
-
-            const table = await viewInventory();
-            console.log("Table data:", table)
-            if (table.length > 0) {
-                setRecords(table);
-                setColumns(Object.keys(table[0]));  
-            } else {
-                setRecords([]);
-                setColumns([]);
+        const handleClick = async () => {
+            console.log("clicked");
+        
+            if (!product || !size || !quantity) {
+                console.error("Missing required fields");
+                return;
             }
+        
+            const data = {
+                product_name: product,   
+                size: size?.value || "",  
+                quantity: Number(quantity)
+            };
+        
+            console.log("Data being sent:", data); // Debugging
+        
+            try {
+                const response = await addInventory(data);
+                console.log("Response from API:", response); // Debugging
+        
+                setProduct("");
+                setQuantity("");
+        
+                const table = await viewInventory();
+                console.log("Table data after insert:", table);
+                if (table.length > 0) {
+                    setRecords(table);
+                    setColumns(Object.keys(table[0]));  
+                } else {
+                    setRecords([]);
+                    setColumns([]);
+                }
+            } catch (error) {
+                console.error("Error executing action:", error);
+                alert("An error occurred while fulfilling the request.");
+            }
+        };
+        
 
-            
-        } catch (error) {
-            console.error("Error executing action:", error)
-            alert("An error occurred while fulfilling the request.")
-        }
-    }
     return(
         <>
             <div className="content">
