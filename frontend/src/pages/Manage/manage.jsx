@@ -1,11 +1,9 @@
 import '../../App.css'
 import {useState} from "react"
-import Managers from './managers'
 import Items from './items'
 import Suppliers from './suppliers'
 import Products from './products'
 import Outlets from './outlets'
-import Employees from './employees'
 import Clients from './clients'
 
 export default function Manage(){
