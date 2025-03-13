@@ -31,9 +31,7 @@
         const [price, setPrice] = useState('')
         const [selectedDate, setSelectedDate] = useState('')
 
-        const [isEditing, setIsEditing] = useState(false)
-        const [editData, setEditData] = useState(null)
-
+        
         const addDelivery = async () => {
             console.log('clicked');
         

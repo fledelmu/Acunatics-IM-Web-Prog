@@ -388,6 +388,34 @@ app.get("/api/manage-search-outlet", async(req, res) => {
     res.status(500).json({data: []})
   }
 })
+app.put("/api/manage-edit-outlet", async (req, res) => {
+  const { id, location } = req.body;
+
+  if (!id || !location) {
+    return res.status(400).json({ message: "Outlet ID and location are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    const [updateResult] = await db.query(
+      "UPDATE branch SET location = ? WHERE branch_id = ?",
+      [location, id]
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Outlet not found or no changes made" });
+    }
+
+    await db.query("COMMIT");
+    res.status(200).json({ message: "Outlet updated successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error updating outlet:", error);
+    res.status(500).json({ message: "Error updating outlet", error: error.message });
+  }
+});
 
 
 //Manage - Products
@@ -436,7 +464,57 @@ app.get("/api/manage-search-product", async(req, res) => {
     res.status(500).json({data: []})
   }
 })
+app.put("/api/manage-edit-product", async (req, res) => {
+  const { id, name, size, price } = req.body;
 
+  if (!id || (!name && !size && !price)) {
+    return res.status(400).json({ message: "Product ID and at least one field to update are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    let updateFields = [];
+    let updateValues = [];
+
+    if (name) {
+      updateFields.push("product_name = ?");
+      updateValues.push(name);
+    }
+    if (size) {
+      updateFields.push("size = ?");
+      updateValues.push(size);
+    }
+    if (price !== undefined) {
+      updateFields.push("price = ?");
+      updateValues.push(price);
+    }
+
+    if (updateFields.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "No valid fields provided for update" });
+    }
+
+    updateValues.push(id);
+
+    const [updateResult] = await db.query(
+      `UPDATE Product_details SET ${updateFields.join(", ")} WHERE product_id = ?`,
+      updateValues
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Product not found or no changes made" });
+    }
+
+    await db.query("COMMIT");
+    res.status(200).json({ message: "Product updated successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error updating product:", error);
+    res.status(500).json({ message: "Error updating product", error: error.message });
+  }
+});
 
 //Manage - Items
 app.post("/api/manage-add-item", async(req, res) => {
@@ -494,7 +572,61 @@ app.get("/api/manage-search-item", async(req, res) => {
     res.status(500).json({data: []})
   }
 })
+app.put("/api/manage-edit-item", async (req, res) => {
+  const { id, name, type, unit, price } = req.body;
 
+  if (!id || (!name && !type && !unit && !price)) {
+    return res.status(400).json({ message: "Item ID and at least one field to update are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    let updateFields = [];
+    let updateValues = [];
+
+    if (name) {
+      updateFields.push("item_name = ?");
+      updateValues.push(name);
+    }
+    if (type) {
+      updateFields.push("item_type = ?");
+      updateValues.push(type);
+    }
+    if (unit) {
+      updateFields.push("unit = ?");
+      updateValues.push(unit);
+    }
+    if (price !== undefined) {
+      updateFields.push("price = ?");
+      updateValues.push(price);
+    }
+
+    if (updateFields.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "No valid fields provided for update" });
+    }
+
+    updateValues.push(id);
+
+    const [updateResult] = await db.query(
+      `UPDATE item_type SET ${updateFields.join(", ")} WHERE item_id = ?`,
+      updateValues
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Item not found or no changes made" });
+    }
+
+    await db.query("COMMIT");
+    res.status(200).json({ message: "Item updated successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error updating item:", error);
+    res.status(500).json({ message: "Error updating item", error: error.message });
+  }
+});
 // Manage - Client
 
 app.get("/api/manage-get-clients", async(req, res) => {
@@ -547,50 +679,55 @@ app.post("/api/manage-add-client", async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal server error" })
   }
 })
+app.put("/api/manage-edit-client", async (req, res) => {
+  const { id, name, contact } = req.body;
 
-//Inventory - Stalls Inventory
-app.get("/api/inventory-stalls-inventory", async (req, res) => {
-  const { location } = req.query;
-
-  // Log the received location parameter
-  console.log("Received location:", location);
-
-  // Check if location is provided
-  if (!location) {
-    return res.status(400).json({ message: "Location is required" });
+  if (!id || (!name && !contact)) {
+    return res.status(400).json({ message: "Client ID and at least one field to update are required" });
   }
 
   try {
-    // Query to find branch ID based on location
-    const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [location]);
-    if (branchResult.length === 0) {
-      return res.status(404).json({ message: "Branch not found" });
+    await db.query("START TRANSACTION");
+
+    let updateFields = [];
+    let updateValues = [];
+
+    if (name) {
+      updateFields.push("name = ?");
+      updateValues.push(name);
+    }
+    if (contact) {
+      updateFields.push("contact = ?");
+      updateValues.push(contact);
     }
 
-    const branchId = branchResult[0].branch_id;
+    if (updateFields.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "No valid fields provided for update" });
+    }
 
-    // Query to fetch inventory data for the found branch ID
-    const [inventoryResult] = await db.query(`
-      SELECT 
-        bi.inventory_id, 
-        bi.order_id, 
-        bi.date, 
-        bp.product_id, 
-        bp.quantity, 
-        bp.price 
-      FROM branch_inventory bi
-      JOIN branch_product bp ON bi.inventory_id = bp.inventory_id
-      WHERE bi.branch_id = ?
-    `, [branchId]);
+    updateValues.push(id);
 
-    // Respond with the inventory data
-    res.json(inventoryResult);
+    const [updateResult] = await db.query(
+      `UPDATE client SET ${updateFields.join(", ")} WHERE client_id = ?`,
+      updateValues
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Client not found or no changes made" });
+    }
+
+    await db.query("COMMIT");
+    res.status(200).json({ message: "Client updated successfully" });
   } catch (error) {
-    console.error("Error fetching stalls inventory:", error);
-    res.status(500).json({ message: "Error fetching stalls inventory", error: error.message });
+    await db.query("ROLLBACK");
+    console.error("Error updating client:", error);
+    res.status(500).json({ message: "Error updating client", error: error.message });
   }
 });
 
+//Inventory - Stalls Inventory
 app.post("/api/inventory-add-production-inventory", async (req, res) => {
   const { product_name, size, quantity } = req.body;
   const now = new Date().toISOString();
@@ -610,45 +747,38 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
       [product_name, size]
     );
 
-    let productDId;
+    let productId;
 
     if (productDetailsResult.length > 0) {
-      productDId = productDetailsResult[0].product_id;
+      productId = productDetailsResult[0].product_id;
     } else {
       // Insert into Product_details
       const [addProductDetails] = await db.query(
         "INSERT INTO Product_details (product_name, size) VALUES (?, ?)",
         [product_name, size]
       );
-      productDId = addProductDetails.insertId;
+      productId = addProductDetails.insertId;
       console.log(`Inserted new product details with ID: ${productId}`);
     }
 
-
     // Ensure `productId` is valid before proceeding
-    if (!productDId) {
+    if (!productId) {
       return res.status(400).json({ message: "Failed to retrieve or insert product." });
     }
 
-
-    const [addProduct] = await db.query("INSERT INTO product (product_name, quantity) VALUES (?,?)", [productDId, quantity])
-
-    const productId = addProduct.insertId
-    // Insert into inventory
-    const [addInventory] = await db.query(
-      `INSERT INTO inventory (product, date) VALUES (?, ?)`,
-      [productId, now]
-    );
-    
-    console.log(`Inserted into inventory with ID: ${addInventory.insertId}`);
-
     // Insert into product table using `productId`
     await db.query(
-      `INSERT INTO product (product_name, quantity) VALUES (?, ?) 
-       ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)`,
-      [productId, quantity]
+      "INSERT INTO product (product_id, product_name, quantity) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)",
+      [productId, product_name, quantity]
     );
     console.log(`Inserted/Updated product table with ID: ${productId}`);
+
+    // Insert into inventory
+    const [addInventory] = await db.query(
+      "INSERT INTO inventory (product, date) VALUES (?, ?)",
+      [productId, now]
+    );
+    console.log(`Inserted into inventory with ID: ${addInventory.insertId}`);
 
     await db.query("COMMIT");
     res.status(201).json({ message: "Production inventory added successfully" });
@@ -658,7 +788,6 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     res.status(500).json({ message: "Error adding production inventory", error: error.message });
   }
 });
-
 
 
 
