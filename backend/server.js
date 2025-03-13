@@ -152,9 +152,6 @@ app.post("/api/process-delivery", async (req, res) => {
 
 
 //Process - Supply
-app.post("/api/process-supply", async (req, res) =>{
-
-})
 
 // Records Tab
 app.get("/api/production-records", async (req, res) => {
