@@ -1,9 +1,7 @@
 import '../../App.css'
 import './inventory.css'
-import {useState} from "react"
-import Select from 'react-select'
-import DatePicker from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.css'
+import {useState, useEffect} from "react"
+import { viewInventory } from '../../utils/api'
 
 export default function InvProduction(){
 
@@ -20,7 +18,21 @@ export default function InvProduction(){
 
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
-    
+    useEffect(() => {
+        async function loadInventory() {
+            let table = []
+            table = await viewInventory()
+            if (table.length > 0) { 
+                setRecords(table)
+                setColumns(Object.keys(table[0]))
+            } else {
+                setRecords([])
+                setColumns([])
+            }
+        }
+        loadInventory()
+    }, [])
+
     return(
         <>
             <div className="content">
