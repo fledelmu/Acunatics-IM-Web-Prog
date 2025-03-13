@@ -44,7 +44,7 @@ export default function InvProduction(){
 
         const data = {
             product: product,
-            size: size.value,
+            size: size?.value || "",  
             quantity: Number(quantity)
         }
 
@@ -102,8 +102,8 @@ export default function InvProduction(){
                         <Select
                         className="selection"
                         options={sizes}
-                        value={sizes.find(s => s.value === size)}
-                        onChange={(selectedOption) => setSize(selectedOption ? selectedOption.value : "")}
+                        value={size} // size should be an object
+                        onChange={(selectedOption) => setSize(selectedOption)}
                         placeholder="Select size..."
                         />
                         <button className="input-button" onClick={handleClick}>Add</button>

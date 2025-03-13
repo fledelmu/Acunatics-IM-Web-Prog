@@ -51,10 +51,10 @@ app.post("/api/process-production", async (req, res) =>{
     res.status(500).json({ message: "Error inserting records", error: error.message })
   }
 })
-
+  
 // Process - Delivery
 app.post("/api/process-delivery", async (req, res) => {
-  const { type, target, location, product, quantity, price, size } = req.body;
+  const { type, target, location, product, date, quantity, price } = req.body;
   const now = new Date().toISOString();
 
   console.log("Request body:", req.body);
@@ -66,82 +66,79 @@ app.post("/api/process-delivery", async (req, res) => {
     let branchId = null;
     let orderId = null;
     let orderDetailsId = null;
-    let inventoryId = null;
 
-    // Handle client/outlet logic
     if (type === "Client") {
+      console.log("Checking client:", target);
       const [clientResult] = await db.query("SELECT client_id FROM client WHERE name = ?", [target]);
+      console.log("Client result:", clientResult);
+
       if (clientResult.length > 0) {
         clientId = clientResult[0].client_id;
+        console.log("Client ID found:", clientId);
       } else {
         const [addClient] = await db.query("INSERT INTO client (name) VALUES (?)", [target]);
         clientId = addClient.insertId;
+        console.log("New client ID:", clientId);
       }
     } else if (type === "Outlet") {
+      console.log("Checking branch:", target);
       const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [target]);
+      console.log("Branch result:", branchResult);
+
       if (branchResult.length > 0) {
         branchId = branchResult[0].branch_id;
+        console.log("Branch ID found:", branchId);
       } else {
         const [addBranch] = await db.query("INSERT INTO branch (location) VALUES (?)", [target]);
         branchId = addBranch.insertId;
+        console.log("New branch ID:", branchId);
       }
     }
 
     if (!clientId && !branchId) {
+      console.error("Client or Branch ID is not provided");
       throw new Error("Client or Branch must be provided");
     }
 
-    // Create or get product and inventory entry
-    const [productResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ?", [product]);
-    let productId;
-    
-    if (productResult.length > 0) {
-      productId = productResult[0].product_id;
-    } else {
-      const [addProduct] = await db.query("INSERT INTO Product_details (product_name) VALUES (?)", [product]);
-      productId = addProduct.insertId;
+    // Ensure the inventory item exists
+    const [inventoryResult] = await db.query("SELECT inventory_id FROM inventory WHERE inventory_id = ?", [order_items]);
+    if (inventoryResult.length === 0) {
+      throw new Error("Inventory item does not exist");
     }
 
-    // Create inventory entry
-    const [addInventory] = await db.query(
-      "INSERT INTO inventory (product, date) VALUES (?, ?)",
-      [productId, now]
-    );
-    inventoryId = addInventory.insertId;
-
-    // Create order details
     const subtotal = quantity * price;
     const [addOrderDetails] = await db.query(
-      "INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)",
-      [inventoryId, quantity, subtotal]
+      `INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)`,
+
+      [order_items, quantity, subtotal]
     );
     orderDetailsId = addOrderDetails.insertId;
+    console.log("New order details ID:", orderDetailsId);
 
-    // Create order
     const [addOrder] = await db.query(
-      "INSERT INTO orders (date, order_details) VALUES (?, ?)",
-      [now, orderDetailsId]
+      `INSERT INTO orders (manager_id, date, order_details) VALUES (?, ?, ?)`,
+
+      [null, date, orderDetailsId] // Assuming manager_id is null for now
     );
     orderId = addOrder.insertId;
+    console.log("New order ID:", orderId);
 
-    // Create delivery record with appropriate relationships
-    if (type === "Client") {
-      await db.query(
-        "INSERT INTO delivery (client_id, order_id, location, date) VALUES (?, ?, ?, ?)",
-        [clientId, orderId, location, now]
-      );
-    } else {
-      // For Outlet/Branch deliveries, first create the delivery record
-      await db.query(
-        "INSERT INTO delivery (order_id, location, date) VALUES (?, ?, ?)",
-        [orderId, location, now]
-      );
+    if (clientId) {
+      const [addDelivery] = await db.query(
+        `INSERT INTO delivery (client_id, order_id, location, date) VALUES (?, ?, ?, ?)`,
 
-      // Then create the branch_inventory relationship
-      await db.query(
-        "INSERT INTO branch_inventory (inventory_id, order_id, branch_id, date) VALUES (?, ?, ?, ?)",
-        [inventoryId, orderId, branchId, now]
+        [clientId, orderId, location, date]
       );
+      const delivery_ref = addDelivery.insertId;
+      console.log("New delivery ID:", delivery_ref);
+    } else if (branchId) {
+      const [addDelivery] = await db.query(
+        `INSERT INTO delivery (branch_id, order_id, location, date) VALUES (?, ?, ?, ?)`,
+
+        [branchId, orderId, location, date]
+      );
+      const delivery_ref = addDelivery.insertId;
+      console.log("New delivery ID:", delivery_ref);
     }
 
     await db.query("COMMIT");
@@ -153,6 +150,8 @@ app.post("/api/process-delivery", async (req, res) => {
   }
 });
 
+
+//Process - Supply
 
 
 // Records Tab
@@ -348,29 +347,36 @@ app.post("/api/manage-add-suppliers", async(req, res) => {
     res.status(500).json({ message: "Internal server error" })
   }
 })
+
 //Manage - Employees
-app.post("/api/manage-add-employee", async(req, res) => {
-  const { name, contact } = req.body
+app.post("/api/manage-add-employee", async (req, res) => {
+  const { name, contact } = req.body;
 
-  try{
-    await db.query("START TRANSACTION")
+  try {
+    await db.query("START TRANSACTION");
 
-    const [nameResult] = await db.query("SELECT * FROM employee WHERE name = ?", [name])
-    const exists = nameResult.length > 0
+    const [nameResult] = await db.query("SELECT * FROM employee WHERE name = ?", [name]);
+    const exists = nameResult.length > 0;
 
-    if(exists){
-      await db.query("ROLLBACK")
-      return res.status(400).json({message: "Employee already exists!"})
+    if (exists) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "Employee already exists!" });
     }
 
-    await db.query("INSERT INTO employee (name, contact) VALUES (?,?)", [name, contact])
+    await db.query("INSERT INTO employee (name, contact) VALUES (?, ?)", [name, contact]);
 
-    await db.query("COMMIT")
+    await db.query("COMMIT");
+
+
+    return res.status(201).json({ success: true, message: "Employee added successfully!" });
+
   } catch (error) {
-    console.error("Error adding employee:", error)
-    res.status(500).json({ message: "Internal server error" })
+    await db.query("ROLLBACK");
+    console.error("Error adding employee:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
-})
+});
+
 
 app.get("/api/manage-get-employee", async (req, res) =>{
   try {
@@ -427,8 +433,6 @@ app.post("/api/manage-add-outlet", async (req, res) => {
 
 app.get("/api/manage-get-outlet", async (req, res) =>{
   try {
-    await db.query("START TRANSACTION")
-
     const [getOutlets] = await db.query("SELECT * FROM branch")
     res.status(200).json(getOutlets)
   } catch (error) {
@@ -441,13 +445,117 @@ app.get("/api/manage-search-outlet", async(req, res) => {
   const { location } = req.query
 
   try {
-    await db.query("START TRANSACTION")
-
     const [searchOutlet] = await db.query("SELECT * FROM branch WHERE location = ?", [location])
 
     res.status(200).json(searchOutlet)
   } catch (error){
     console.error("Error, outlet not found! ", error)
+    res.status(500).json({data: []})
+  }
+})
+
+
+//Manage - Products
+
+app.post("/api/manage-add-product", async(req, res) => {
+  const { name, size, price } = req.body
+
+  try{
+    await db.query("START TRANSACTION")
+
+    await db.query("INSERT INTO Product_details (product_name, size, price) VALUES (?,?,?)", [name,size,price])
+
+    await db.query("COMMIT")
+    
+    return res.status(201).json({ success: true, message: "Product added successfully!" });
+  } catch (error) {
+    console.error("Error adding product:", error)
+    res.status(500).json({ message: "Internal server error" })
+  }
+})
+
+app.get("/api/manage-get-product", async (req, res) =>{
+  try {
+    await db.query("START TRANSACTION")
+
+    const [getProducts] = await db.query("SELECT * FROM Product_details")
+    res.status(200).json(getProducts)
+  } catch (error) {
+    console.error("Error no products!", error)
+    res.status(500).json({data: []})
+  }
+})
+
+app.get("/api/manage-search-product", async(req, res) => {
+  const { name } = req.query
+
+  try {
+    await db.query("START TRANSACTION")
+
+    const [searchProduct] = await db.query("SELECT * FROM Product_details WHERE product_name = ?", [ name ])
+
+    res.status(200).json(searchProduct)
+  }
+  catch (error){
+    console.error("Error, product not found! ", error)
+    res.status(500).json({data: []})
+  }
+})
+
+
+//Manage - Items
+app.post("/api/manage-add-item", async(req, res) => {
+  const { name, type, unit, price } = req.body
+
+  console.log("Received Data:", req.body);
+
+  try{
+    await db.query("START TRANSACTION")
+
+    const [productResult] = await db.query("SELECT * FROM item_type WHERE item_name = ?", [name])
+    const exists = productResult.length > 0
+
+    if(exists){
+      await db.query("ROLLBACK")
+      return res.status(400).json({message: "Item already exists!"})
+    }
+
+    await db.query("INSERT INTO item_type (item_name, item_type, unit, price) VALUES (?, ?, ?, ?)", [name, type, unit, price])
+
+    await db.query("COMMIT")
+    return res.status(201).json({ success: true, message: "Item added successfully!" })
+  }
+  catch (error) {
+    console.error("Error adding product:", error)
+    res.status(500).json({ message: "Internal server error" })
+  }
+})
+
+app.get("/api/manage-get-item", async (req, res) =>{
+  try {
+    await db.query("START TRANSACTION")
+
+    const [getItems] = await db.query("SELECT * FROM item_type")
+    res.status(200).json(getItems)
+  } catch (error) {
+    console.error("Error no items!", error)
+    res.status(500).json({data: []})
+  }
+})
+
+app.get("/api/manage-search-item", async(req, res) => {
+  const { name } = req.query
+
+  try
+
+  {
+    await db.query("START TRANSACTION")
+
+    const [searchItem] = await db.query("SELECT * FROM item_type WHERE item_name = ?", [name])
+
+    res.status(200).json(searchItem)
+  } catch (error){
+    console.error("Error, item not found! ", error)
     res.status(500).json({data: []})
   }
 })
@@ -505,118 +613,6 @@ app.post("/api/manage-add-client", async (req, res) => {
   }
 })
 
-//Manage - Products
-
-app.post("/api/manage-add-product", async(req, res) => {
-  const { product_name, product_size, quantity, price } = req.body
-
-  try{
-    await db.query("START TRANSACTION")
-
-    const [productResult] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
-    const exists = productResult.length > 0
-
-    if(exists){
-      await db.query("ROLLBACK")
-      return res.status(400).json({message: "Product already exists!"})
-    }
-
-    await db.query("INSERT INTO product (product_name, product_size, quantity, price) VALUES (?,?,?,?)", [product_name, product_size, quantity, price])
-
-    await db.query("COMMIT")
-  } catch (error) {
-    console.error("Error adding product:", error)
-    res.status(500).json({ message: "Internal server error" })
-  }
-})
-
-app.get("/api/manage-get-product", async (req, res) =>{
-  try {
-    await db.query("START TRANSACTION")
-
-    const [getProducts] = await db.query("SELECT * FROM product")
-    res.status(200).json(getProducts)
-  } catch (error) {
-    console.error("Error no products!", error)
-    res.status(500).json({data: []})
-  }
-})
-
-app.get("/api/manage-search-product", async(req, res) => {
-  const { product_name, product_size } = req.query
-
-  try {
-    await db.query("START TRANSACTION")
-
-    const [searchProduct] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
-
-    res.status(200).json(searchProduct)
-  }
-  catch (error){
-    console.error("Error, product not found! ", error)
-    res.status(500).json({data: []})
-  }
-})
-
-
-//Manage - Items
-app.post("/api/manage-add-item", async(req, res) => {
-  const { product_name, product_size, quantity, price } = req.body
-
-  try
-
-  {
-    await db.query("START TRANSACTION")
-
-    const [productResult] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
-    const exists = productResult.length > 0
-
-    if(exists){
-      await db.query("ROLLBACK")
-      return res.status(400).json({message: "Product already exists!"})
-    }
-
-    await db.query("INSERT INTO product (product_name, product_size, quantity, price) VALUES (?,?,?,?)", [product_name, product_size, quantity, price])
-
-    await db.query("COMMIT")
-  }
-  catch (error) {
-    console.error("Error adding product:", error)
-    res.status(500).json({ message: "Internal server error" })
-  }
-})
-
-app.get("/api/manage-get-item", async (req, res) =>{
-  try {
-    await db.query("START TRANSACTION")
-
-    const [getItems] = await db.query("SELECT * FROM product")
-    res.status(200).json(getItems)
-  } catch (error) {
-    console.error("Error no items!", error)
-    res.status(500).json({data: []})
-  }
-})
-
-app.get("/api/manage-search-item", async(req, res) => {
-  const { product_name, product_size } = req.query
-
-  try
-
-  {
-    await db.query("START TRANSACTION")
-
-    const [searchItem] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
-
-    res.status(200).json(searchItem)
-  } catch (error){
-    console.error("Error, item not found! ", error)
-    res.status(500).json({data: []})
-  }
-})
-
-
-
 //Inventory - Stalls Inventory
 app.get("/api/inventory-stalls-inventory", async (req, res) => {
   const { location } = req.query;
@@ -662,12 +658,10 @@ app.get("/api/inventory-stalls-inventory", async (req, res) => {
 
 //Inventory - add - production - invetory
 app.post("/api/inventory-add-production-inventory", async (req, res) => {
-  const { product_name, quantity, price, product_size } = req.body;
+  const { product_name, size, quantity } = req.body;
   const now = new Date().toISOString();
 
-  console.log("Received request body:", req.body);
-
-  if (!product_name || !quantity || !price || !product_size) {
+  if (!product_name || !size || !quantity) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -675,35 +669,61 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     await db.query("START TRANSACTION");
 
     // Check if product details exist
-    const [productDetailsResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ?", [product_name]);
-    let productId;
+    const [productDetailsResult] = await db.query(
+      "SELECT product_id FROM Product_details WHERE product_name = ? AND size = ?",
+      [product_name, size]
+    );
 
+    let productId;
     if (productDetailsResult.length > 0) {
-      productId = productDetailsResult[0].product_id;
+        productId = productDetailsResult[0].product_id;  // Access the first row's product_id
     } else {
-      // Insert into Product_details
-      const [addProductDetails] = await db.query("INSERT INTO Product_details (product_name) VALUES (?)", [product_name]);
-      productId = addProductDetails.insertId;
+        console.log("No matching product found.");
+        await db.query("ROLLBACK");  // Rollback transaction if product doesn't exist
+        return res.status(400).json({ message: "Product does not exist. Please add it first." });
     }
 
-    // Insert into inventory
-    const [addInventory] = await db.query(
+    // Insert into product table
+    await db.query(
+      `INSERT INTO product (product_id, quantity) 
+      VALUES (?, ?) 
+      ON DUPLICATE KEY UPDATE quantity = quantity + ?`,
+      [productId, quantity, quantity]
+    );
+
+    // Insert into inventory table
+    await db.query(
       `INSERT INTO inventory (product, date) VALUES (?, ?)`,
       [productId, now]
-    );
-    const inventoryId = addInventory.insertId;
-
-    // Corrected: Insert into product table using product_id for product_name
-    await db.query(
-      `INSERT INTO product (product_name, product_size, quantity, price) VALUES (?, ?, ?, ?)`,
-      [productId, product_size, quantity, price]
     );
 
     await db.query("COMMIT");
     res.status(201).json({ message: "Production inventory added successfully" });
+
   } catch (error) {
     await db.query("ROLLBACK");
     console.error("Error adding production inventory:", error);
     res.status(500).json({ message: "Error adding production inventory", error: error.message });
   }
 });
+
+
+
+app.get("/api/inventory-view-production-inventory", async (req, res) =>{
+  try{
+    const [getDetails] = await db.query(`
+      SELECT                   
+      pd.product_name,                    
+      pd.size, 
+      SUM(p.quantity) AS total
+      FROM Product_details pd
+      JOIN product p 
+      ON pd.product_id = p.product_name
+      GROUP BY pd.size
+    `)
+    res.json(getDetails)
+  } catch (error) {
+    console.error("Error fetching inventory:", error)
+    res.status(500).json({ error: error.message })
+  }
+})

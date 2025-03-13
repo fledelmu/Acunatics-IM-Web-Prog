@@ -269,7 +269,7 @@ export const searchProducts = async (data) => {
 
 export const addItem = async (data) => {
     try{
-        const response = await fetch("http://localhost:5000/api/manage-add-item", {
+        const response = await fetch(`${URL}/api/manage-add-item`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
