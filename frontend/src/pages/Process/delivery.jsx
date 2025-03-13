@@ -20,11 +20,16 @@
         
         const [records, setRecords] = useState([])
         const [columns, setColumns] = useState([])
+
+        const [isEditing, setIsEditing] = useState(false)
+        const [editData, setEditData] = useState(null)
         
         const [name, setName] = useState('')
         const [product, setProduct] = useState('')
         const [outlet, setOutlet] = useState('')
         const [location, setLocation] = useState('')
+        const [quantity, setQuantity] = useState('')
+        const [price, setPrice] = useState('')
         const [selectedDate, setSelectedDate] = useState('')
 
         const addDelivery = async () => {
@@ -80,27 +85,36 @@
                             />
 
                         <button className="input-button">Refresh</button>  
+                        
 
                         <input
+
+                        onChange = {(e) => setName(e.target.value)}
                         value={name}
                         placeholder={selectedType?.value === "Outlet" ? "Outlet" : "Client"}
                         />
                         
                         {selectedType?.value === "Client" && (
                             <input
+                            onChange = {(e) => setLocation(e.target.value)}
                             value={location}
                             placeholder="Enter location..."
                             />
                         )}
                         <input
+                        onChange = {(e) => setProduct(e.target.value)}
                         value={product}
                         placeholder="Enter product..."
                         />                 
                         
-                        <input placeholder="Enter quantity..."></input> 
+                        <input 
+                        onChange = {(e) => setQuantity(e.target.value)}
+                        placeholder="Enter quantity..."></input> 
                         
                         
-                        <input placeholder="Enter price..."></input>
+                        <input 
+                        onChange = {(e) => setPrice(e.target.value)}
+                        placeholder="Enter price..."></input>
 
                     <button className="input-button" onClick={addDelivery}>Add</button>
                 </div>

@@ -55,7 +55,7 @@ app.post("/api/process-production", async (req, res) =>{
 
 // Process - Delivery
 app.post("/api/process-delivery", async (req, res) => {
-  const { type, target, location, product, quantity, price, size } = req.body;
+  const { type, target, location, product, quantity, price,} = req.body;
   const now = new Date().toISOString();
 
   console.log("Request body:", req.body);
