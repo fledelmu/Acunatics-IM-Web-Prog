@@ -52,6 +52,7 @@ app.post("/api/process-production", async (req, res) =>{
   }
 })
 
+
 // Process - Delivery
 app.post("/api/process-delivery", async (req, res) => {
   const { type, target, location, product, quantity, price, size } = req.body;
@@ -90,18 +91,30 @@ app.post("/api/process-delivery", async (req, res) => {
     if (!clientId && !branchId) {
       throw new Error("Client or Branch must be provided");
     }
-
-    // Create or get product and inventory entry
-    const [productResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ?", [product]);
-    let productId;
     
-    if (productResult.length > 0) {
-      productId = productResult[0].product_id;
-    } else {
-      const [addProduct] = await db.query("INSERT INTO Product_details (product_name) VALUES (?)", [product]);
-      productId = addProduct.insertId;
-    }
+    // First create product details and get the product ID
+const [productDetailsResult] = await db.query(
+  "SELECT product_id FROM Product_details WHERE product_name = ?", 
+  [product]
+);
 
+let productId;
+if (productDetailsResult.length > 0) {
+  productId = productDetailsResult[0].product_id;
+} else {
+  // Insert into Product_details first
+  const [addProductDetails] = await db.query(
+    "INSERT INTO Product_details (product_name, price) VALUES (?, ?)", 
+    [product, price]
+  );
+  productId = addProductDetails.insertId;
+
+  // Then insert into product table using the product_id as product_name
+  await db.query(
+    "INSERT INTO product (product_id, product_name,quantity) VALUES (?, ?, ?)",
+    [productId, productId, quantity]
+  );
+}
     // Create inventory entry
     const [addInventory] = await db.query(
       "INSERT INTO inventory (product, date) VALUES (?, ?)",
@@ -452,58 +465,6 @@ app.get("/api/manage-search-outlet", async(req, res) => {
   }
 })
 
-// Manage - Client
-
-app.get("/api/manage-get-clients", async(req, res) => {
-  try{
-    const [getClients] = await db.query("SELECT * FROM client")
-
-    res.status(200).json(getClients)
-  } catch (error) {
-    console.error("Error, retrieving clients", error)
-    res.status(500),json({data: []})
-  }
-})
-
-app.get("/api/manage-search-client", async(req, res) => {
-  const { name } = req.query
-  try{
-    const [searchClient] = await db.query("SELECT * FROM client WHERE name = ?", [name])
-
-    res.status(200).json(searchClient)
-  } catch (error) {
-    console.error("Error, client not found!", error)
-    res.status(500).json({data: []})
-  }
-})
-
-app.post("/api/manage-add-client", async (req, res) => {
-  const { name, contact } = req.body
-
-  try {
-    await db.query("START TRANSACTION")
-
-    const [nameResult] = await db.query("SELECT * FROM client WHERE name = ?", [name])
-    const exists = nameResult.length > 0
-
-    if (exists) {
-      await db.query("ROLLBACK")
-      return res.status(400).json({ message: "Client already exists!" })
-    }
-
-    await db.query("INSERT INTO client (name, contact) VALUES (?, ?)", [name, contact])
-
-    await db.query("COMMIT")
-
-
-    return res.status(201).json({ success: true, message: "Client added successfully!" })
-
-  } catch (error) {
-    await db.query("ROLLBACK");
-    console.error("Error adding client:", error)
-    return res.status(500).json({ success: false, message: "Internal server error" })
-  }
-})
 
 //Manage - Products
 
@@ -662,41 +623,46 @@ app.get("/api/inventory-stalls-inventory", async (req, res) => {
 
 //Inventory - add - production - invetory
 app.post("/api/inventory-add-production-inventory", async (req, res) => {
-  const { product_name, quantity, price, product_size } = req.body;
+  const { product_name, quantity, size } = req.body;
   const now = new Date().toISOString();
 
   console.log("Received request body:", req.body);
 
-  if (!product_name || !quantity || !price || !product_size) {
+  if (!product_name || !quantity || !size) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
     await db.query("START TRANSACTION");
 
-    // Check if product details exist
-    const [productDetailsResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ?", [product_name]);
+    // First, check if product details exist
+    const [productDetailsResult] = await db.query(
+      "SELECT product_id FROM Product_details WHERE product_name = ?", 
+      [product_name]
+    );
+    
     let productId;
-
     if (productDetailsResult.length > 0) {
       productId = productDetailsResult[0].product_id;
     } else {
-      // Insert into Product_details
-      const [addProductDetails] = await db.query("INSERT INTO Product_details (product_name) VALUES (?)", [product_name]);
+      // Insert into Product_details first
+      const [addProductDetails] = await db.query(
+        "INSERT INTO Product_details (product_name) VALUES (?)", 
+        [product_name]
+      );
       productId = addProductDetails.insertId;
     }
 
-    // Insert into inventory
-    const [addInventory] = await db.query(
+    // Next, insert into product table
+    const [productResult] = await db.query(
+      `INSERT INTO product (product_id, product_name, quantity) VALUES (?, ?, ?)`,
+      [productId, productId, quantity]
+    );
+
+    // Finally, insert into inventory
+    await db.query(
       `INSERT INTO inventory (product, date) VALUES (?, ?)`,
       [productId, now]
-    );
-    const inventoryId = addInventory.insertId;
-
-    // Corrected: Insert into product table using product_id for product_name
-    await db.query(
-      `INSERT INTO product (product_name, product_size, quantity, price) VALUES (?, ?, ?, ?)`,
-      [productId, product_size, quantity, price]
     );
 
     await db.query("COMMIT");
@@ -707,3 +673,23 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     res.status(500).json({ message: "Error adding production inventory", error: error.message });
   }
 });
+
+app.get("/api/inventory-view-production-inventory", async (req, res) =>{
+  try{
+    const [getDetails] = await db.query(`
+      SELECT                   
+      pd.product_name,                    
+      pd.size, 
+      SUM(p.quantity) AS total
+      FROM Product_details pd
+      JOIN product p 
+      ON pd.product_id = p.product_name 
+      GROUP BY pd.product_id, pd.product_name, pd.size
+    `)
+    res.json(getDetails)
+  } catch (error) {
+    console.error("Error fetching inventory:", error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
