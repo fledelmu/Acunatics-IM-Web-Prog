@@ -153,7 +153,7 @@ app.post("/api/process-delivery", async (req, res) => {
 
 //Process - Supply
 app.post("/api/process-supply", async (req, res) =>{
-  
+
 })
 
 // Records Tab
@@ -391,6 +391,34 @@ app.get("/api/manage-search-outlet", async(req, res) => {
   }
 })
 
+app.put("/api/manage-edit-outlet", async (req, res) => {
+  const { id, location } = req.body;
+
+  if (!id || !location) {
+    return res.status(400).json({ message: "Outlet ID and location are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    const [updateResult] = await db.query(
+      "UPDATE branch SET location = ? WHERE branch_id = ?",
+      [location, id]
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Outlet not found or no changes made" });
+    }
+
+    await db.query("COMMIT");
+    res.status(200).json({ message: "Outlet updated successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error updating outlet:", error);
+    res.status(500).json({ message: "Error updating outlet", error: error.message });
+  }
+});
 
 //Manage - Products
 
@@ -439,6 +467,57 @@ app.get("/api/manage-search-product", async(req, res) => {
   }
 })
 
+app.put("/api/manage-edit-product", async (req, res) => {
+  const { id, name, size, price } = req.body;
+
+  if (!id || (!name && !size && !price)) {
+    return res.status(400).json({ message: "Product ID and at least one field to update are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    let updateFields = [];
+    let updateValues = [];
+
+    if (name) {
+      updateFields.push("product_name = ?");
+      updateValues.push(name);
+    }
+    if (size) {
+      updateFields.push("size = ?");
+      updateValues.push(size);
+    }
+    if (price !== undefined) {
+      updateFields.push("price = ?");
+      updateValues.push(price);
+    }
+
+    if (updateFields.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "No valid fields provided for update" });
+    }
+
+    updateValues.push(id);
+
+    const [updateResult] = await db.query(
+      "UPDATE Product_details SET ${updateFields.join(", ")} WHERE product_id = ?",
+      updateValues
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Product not found or no changes made" });
+    }
+
+    await db.query("COMMIT");
+    res.status(200).json({ message: "Product updated successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error updating product:", error);
+    res.status(500).json({ message: "Error updating product", error: error.message });
+  }
+});
 
 //Manage - Items
 app.post("/api/manage-add-item", async(req, res) => {
@@ -497,6 +576,62 @@ app.get("/api/manage-search-item", async(req, res) => {
   }
 })
 
+app.put("/api/manage-edit-item", async (req, res) => {
+  const { id, name, type, unit, price } = req.body;
+
+  if (!id || (!name && !type && !unit && !price)) {
+    return res.status(400).json({ message: "Item ID and at least one field to update are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    let updateFields = [];
+    let updateValues = [];
+
+    if (name) {
+      updateFields.push("item_name = ?");
+      updateValues.push(name);
+    }
+    if (type) {
+      updateFields.push("item_type = ?");
+      updateValues.push(type);
+    }
+    if (unit) {
+      updateFields.push("unit = ?");
+      updateValues.push(unit);
+    }
+    if (price !== undefined) {
+      updateFields.push("price = ?");
+      updateValues.push(price);
+    }
+
+    if (updateFields.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "No valid fields provided for update" });
+    }
+
+    updateValues.push(id);
+
+    const [updateResult] = await db.query(
+      "UPDATE item_type SET ${updateFields.join(", ")} WHERE item_id = ?",
+      updateValues
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Item not found or no changes made" });
+    }
+
+    await db.query("COMMIT");
+    res.status(200).json({ message: "Item updated successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error updating item:", error);
+    res.status(500).json({ message: "Error updating item", error: error.message });
+  }
+})
+
 // Manage - Client
 
 app.get("/api/manage-get-clients", async(req, res) => {
@@ -550,6 +685,53 @@ app.post("/api/manage-add-client", async (req, res) => {
   }
 })
 
+app.put("/api/manage-edit-client", async (req, res) => {
+  const { id, name, contact } = req.body;
+
+  if (!id || (!name && !contact)) {
+    return res.status(400).json({ message: "Client ID and at least one field to update are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    let updateFields = [];
+    let updateValues = [];
+
+    if (name) {
+      updateFields.push("name = ?");
+      updateValues.push(name);
+    }
+    if (contact) {
+      updateFields.push("contact = ?");
+      updateValues.push(contact);
+    }
+
+    if (updateFields.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "No valid fields provided for update" });
+    }
+
+    updateValues.push(id);
+
+    const [updateResult] = await db.query(
+      "UPDATE client SET ${updateFields.join(", ")} WHERE client_id = ?",
+      updateValues
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Client not found or no changes made" });
+    }
+
+    await db.query("COMMIT");
+    res.status(200).json({ message: "Client updated successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error updating client:", error);
+    res.status(500).json({ message: "Error updating client", error: error.message });
+  }
+});
 //Inventory - Stalls Inventory
 app.get("/api/inventory-stalls-inventory", async (req, res) => {
   const { location } = req.query;
