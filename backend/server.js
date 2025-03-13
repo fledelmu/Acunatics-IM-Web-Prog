@@ -51,10 +51,10 @@ app.post("/api/process-production", async (req, res) =>{
     res.status(500).json({ message: "Error inserting records", error: error.message })
   }
 })
-
+  
 // Process - Delivery
 app.post("/api/process-delivery", async (req, res) => {
-  const { type, target, location, order_items, date, quantity, price } = req.body;
+  const { type, target, location, product, date, quantity, price } = req.body;
   const now = new Date().toISOString();
 
   console.log("Request body:", req.body);
@@ -150,6 +150,8 @@ app.post("/api/process-delivery", async (req, res) => {
   }
 });
 
+
+//Process - Supply
 
 
 // Records Tab
@@ -656,7 +658,7 @@ app.get("/api/inventory-stalls-inventory", async (req, res) => {
 
 //Inventory - add - production - invetory
 app.post("/api/inventory-add-production-inventory", async (req, res) => {
-  const { product_name, quantity, price, product_size } = req.body;
+  const { product_name, quantity, size} = req.body;
   const now = new Date().toISOString();
 
   console.log("Received request body:", req.body);
@@ -690,7 +692,7 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     // Corrected: Insert into product table using product_id for product_name
     await db.query(
       `INSERT INTO product (product_name, product_size, quantity, price) VALUES (?, ?, ?, ?)`,
-      [productId, product_size, quantity, price]
+      [productId, product_size, quantity]
     );
 
     await db.query("COMMIT");
@@ -700,4 +702,16 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     console.error("Error adding production inventory:", error);
     res.status(500).json({ message: "Error adding production inventory", error: error.message });
   }
-});
+})
+
+
+app.get("/api/inventory-view-production-inventory", async (req, res) =>{
+  try{
+    const [getDetails] = await db.query(`
+      SELECT
+      pd.product_name
+      FROM Product_details`)
+  } catch (error) {
+
+  }
+})

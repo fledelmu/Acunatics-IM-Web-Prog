@@ -10,7 +10,7 @@ export default function InvStall(){
         { value: "Gmall Bajada", label: "Gmall Bajada" }
     ]
 
-    const [selectedLocation, setSelectedLocation] = useState(null);
+    const [location, setSelectedLocation] = useState(null);
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
     
@@ -21,15 +21,15 @@ export default function InvStall(){
                 <div><h2>Stalls Inventory</h2></div>
                 <div className="inventory-form">
                     <div>
-                        <CreatableSelect
+                        <input
                             className="selection"
-                            options={sampleLocation}
-                            value={selectedLocation}
+                            value={location}
                             onChange={setSelectedLocation}
                             isClearable
                             placeholder="Location"
                         />
                     </div>
+                    <button className="input-button">Search</button>
                 </div>
                 
                     <div className="table-container">
