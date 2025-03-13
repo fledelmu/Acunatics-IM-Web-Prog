@@ -2,7 +2,6 @@
     import './process.css'
     import {useState} from 'react'
     import Select from 'react-select'
-    import DatePicker from 'react-datepicker'
     import { processDelivery, fetchRecords} from '../../utils/api'
     export default function Delivery(){
         const options = [
@@ -31,6 +30,9 @@
         const [quantity, setQuantity] = useState('')
         const [price, setPrice] = useState('')
         const [selectedDate, setSelectedDate] = useState('')
+
+        const [isEditing, setIsEditing] = useState(false)
+        const [editData, setEditData] = useState(null)
 
         const addDelivery = async () => {
             console.log('clicked');

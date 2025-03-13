@@ -70,8 +70,8 @@ export default function Items(){
     const handleButton = async () => {
         const data = { 
             name: name, 
-            type: type?.value || null,  
-            unit: unit?.value || null,  
+            type: type?.value,  
+            unit: unit?.value,  
             price: price
         }
 

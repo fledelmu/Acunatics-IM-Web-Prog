@@ -44,43 +44,6 @@ export const fetchRecords = async (type) =>{
 }
 
 // Manage Tabs
-// Manage/Managers tab
-export const addManager = async (data) => {
-    try{
-        const response = await axios.post(`${URL}/api/add-manager`, data)
-        console.log("Response received", response)
-        
-        return response.data
-    } catch (error) {
-        console.error("Error processing manager:", error);
-        return { success: false, message: "Error processing manager" }
-    }
-}
-
-export const findManager = async (data) => {
-    try {
-        const response = await axios.get(`${URL}/api/search-manager`, {
-            params: { name: data.name }
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching managers", error);
-        return [];
-    }
-}
-
-
-export const fetchManagers = async () => {
-    try{
-        const response = await axios.get(`${URL}/api/get-managers`)
-
-        return response.data
-    } catch (error) {
-        console.error("Error fetching managers!", error)
-        return []
-    }
-}
-
 // Manage/Suppliers tab
 
 export const fetchSuppliers = async () => {
@@ -119,6 +82,15 @@ export const addSuppliers = async (data) => {
     }
 }
 
+export const editSuppliers = async (data) => {
+    try{
+        const response = await axios.put(`${URL}/api/manage-edit-suppliers`)
+        return response.data
+    } catch (error) {
+        console.error("Error processing suppliers:", error);
+        return { success: false, message: "Error processing suppliers" }
+    }
+}
 // Manage/Employees tab
 
 export const addEmployee = async (data) => {
@@ -269,7 +241,7 @@ export const searchProducts = async (data) => {
 
 export const addItem = async (data) => {
     try{
-        const response = await fetch("http://localhost:5000/api/manage-add-item", {
+        const response = await fetch(`${URL}/api/manage-add-item`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
