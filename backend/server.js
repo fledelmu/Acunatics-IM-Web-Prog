@@ -54,7 +54,7 @@ app.post("/api/process-production", async (req, res) =>{
   
 // Process - Delivery
 app.post("/api/process-delivery", async (req, res) => {
-  const { type, target, location, product, date, quantity, price } = req.body;
+  const { type, target, location, product, quantity, price, size } = req.body;
   const now = new Date().toISOString();
 
   console.log("Request body:", req.body);
@@ -66,79 +66,82 @@ app.post("/api/process-delivery", async (req, res) => {
     let branchId = null;
     let orderId = null;
     let orderDetailsId = null;
+    let inventoryId = null;
 
+    // Handle client/outlet logic
     if (type === "Client") {
-      console.log("Checking client:", target);
       const [clientResult] = await db.query("SELECT client_id FROM client WHERE name = ?", [target]);
-      console.log("Client result:", clientResult);
-
       if (clientResult.length > 0) {
         clientId = clientResult[0].client_id;
-        console.log("Client ID found:", clientId);
       } else {
         const [addClient] = await db.query("INSERT INTO client (name) VALUES (?)", [target]);
         clientId = addClient.insertId;
-        console.log("New client ID:", clientId);
       }
     } else if (type === "Outlet") {
-      console.log("Checking branch:", target);
       const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [target]);
-      console.log("Branch result:", branchResult);
-
       if (branchResult.length > 0) {
         branchId = branchResult[0].branch_id;
-        console.log("Branch ID found:", branchId);
       } else {
         const [addBranch] = await db.query("INSERT INTO branch (location) VALUES (?)", [target]);
         branchId = addBranch.insertId;
-        console.log("New branch ID:", branchId);
       }
     }
 
     if (!clientId && !branchId) {
-      console.error("Client or Branch ID is not provided");
       throw new Error("Client or Branch must be provided");
     }
 
-    // Ensure the inventory item exists
-    const [inventoryResult] = await db.query("SELECT inventory_id FROM inventory WHERE inventory_id = ?", [order_items]);
-    if (inventoryResult.length === 0) {
-      throw new Error("Inventory item does not exist");
+    // Create or get product and inventory entry
+    const [productResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ?", [product]);
+    let productId;
+    
+    if (productResult.length > 0) {
+      productId = productResult[0].product_id;
+    } else {
+      const [addProduct] = await db.query("INSERT INTO Product_details (product_name) VALUES (?)", [product]);
+      productId = addProduct.insertId;
     }
 
+    // Create inventory entry
+    const [addInventory] = await db.query(
+      "INSERT INTO inventory (product, date) VALUES (?, ?)",
+      [productId, now]
+    );
+    inventoryId = addInventory.insertId;
+
+    // Create order details
     const subtotal = quantity * price;
     const [addOrderDetails] = await db.query(
-      `INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)`,
-
-      [order_items, quantity, subtotal]
+      "INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)",
+      [inventoryId, quantity, subtotal]
     );
     orderDetailsId = addOrderDetails.insertId;
-    console.log("New order details ID:", orderDetailsId);
 
+    // Create order
     const [addOrder] = await db.query(
-      `INSERT INTO orders (manager_id, date, order_details) VALUES (?, ?, ?)`,
-
-      [null, date, orderDetailsId] // Assuming manager_id is null for now
+      "INSERT INTO orders (date, order_details) VALUES (?, ?)",
+      [now, orderDetailsId]
     );
     orderId = addOrder.insertId;
-    console.log("New order ID:", orderId);
 
-    if (clientId) {
-      const [addDelivery] = await db.query(
-        `INSERT INTO delivery (client_id, order_id, location, date) VALUES (?, ?, ?, ?)`,
-
-        [clientId, orderId, location, date]
+    // Create delivery record with appropriate relationships
+    if (type === "Client") {
+      await db.query(
+        "INSERT INTO delivery (client_id, order_id, location, date) VALUES (?, ?, ?, ?)",
+        [clientId, orderId, location, now]
       );
-      const delivery_ref = addDelivery.insertId;
-      console.log("New delivery ID:", delivery_ref);
-    } else if (branchId) {
-      const [addDelivery] = await db.query(
-        `INSERT INTO delivery (branch_id, order_id, location, date) VALUES (?, ?, ?, ?)`,
-
-        [branchId, orderId, location, date]
+    } else {
+      // For Outlet/Branch deliveries, first create the delivery record
+      await db.query(
+        "INSERT INTO delivery (order_id, location, date) VALUES (?, ?, ?)",
+        [orderId, location, now]
       );
-      const delivery_ref = addDelivery.insertId;
-      console.log("New delivery ID:", delivery_ref);
+
+      // Then create the branch_inventory relationship
+      await db.query(
+        "INSERT INTO branch_inventory (inventory_id, order_id, branch_id) VALUES (?, ?, ?)",
+        [inventoryId, orderId, branchId]
+      );
     }
 
     await db.query("COMMIT");
@@ -939,52 +942,45 @@ app.put("/api/manage-edit-client", async (req, res) => {
 app.get("/api/inventory-stalls-inventory", async (req, res) => {
   const { location } = req.query;
 
-  if (!id || (!name && !contact)) {
-    return res.status(400).json({ message: "Client ID and at least one field to update are required" });
+  // Log the received location parameter
+  console.log("Received location:", location);
+
+  // Check if location is provided
+  if (!location) {
+    return res.status(400).json({ message: "Location is required" });
   }
 
   try {
-    await db.query("START TRANSACTION");
-
-    let updateFields = [];
-    let updateValues = [];
-
-    if (name) {
-      updateFields.push("name = ?");
-      updateValues.push(name);
-    }
-    if (contact) {
-      updateFields.push("contact = ?");
-      updateValues.push(contact);
+    // Query to find branch ID based on location
+    const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [location]);
+    if (branchResult.length === 0) {
+      return res.status(404).json({ message: "Branch not found" });
     }
 
-    if (updateFields.length === 0) {
-      await db.query("ROLLBACK");
-      return res.status(400).json({ message: "No valid fields provided for update" });
-    }
+    const branchId = branchResult[0].branch_id;
 
-    updateValues.push(id);
+    // Query to fetch inventory data for the found branch ID
+    const [inventoryResult] = await db.query(`
+      SELECT 
+        bi.inventory_id, 
+        bi.order_id, 
+        bi.date, 
+        bp.product_id, 
+        bp.quantity, 
+        bp.price 
+      FROM branch_inventory bi
+      JOIN branch_product bp ON bi.inventory_id = bp.inventory_id
+      WHERE bi.branch_id = ?
+    `, [branchId]);
 
-    const [updateResult] = await db.query(
-      `UPDATE client SET ${updateFields.join(", ")} WHERE client_id = ?`,
-      updateValues
-    );
-
-    if (updateResult.affectedRows === 0) {
-      await db.query("ROLLBACK");
-      return res.status(404).json({ message: "Client not found or no changes made" });
-    }
-
-    await db.query("COMMIT");
-    res.status(200).json({ message: "Client updated successfully" });
+    // Respond with the inventory data
+    res.json(inventoryResult);
   } catch (error) {
-    await db.query("ROLLBACK");
-    console.error("Error updating client:", error);
-    res.status(500).json({ message: "Error updating client", error: error.message });
+    console.error("Error fetching stalls inventory:", error);
+    res.status(500).json({ message: "Error fetching stalls inventory", error: error.message });
   }
 });
-
-//Inventory - Stalls Inventory
+//Inventory - add Inventory
 app.post("/api/inventory-add-production-inventory", async (req, res) => {
   const { product_name, size, quantity } = req.body;
   const now = new Date().toISOString();
@@ -1073,3 +1069,22 @@ app.get("/api/inventory-view-production-inventory", async (req, res) =>{
     res.status(500).json({ error: error.message })
   }
 })
+
+//Inventory - Supply Inventory
+app.get("/api/inventory-supply-inventory", async (req, res) => {
+  try {
+    const [supplyInventory] = await db.query(`
+      SELECT 
+        it.item_name, 
+        it.item_type, 
+        it.unit, 
+        i.quantity
+      FROM item i
+      JOIN item_type it ON i.item_type = it.item_type_id
+    `);
+    console.log("Supply Inventory:", supplyInventory); // Log the result
+    res.json(supplyInventory);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
