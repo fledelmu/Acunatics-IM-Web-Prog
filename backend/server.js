@@ -732,6 +732,7 @@ app.put("/api/manage-edit-client", async (req, res) => {
     res.status(500).json({ message: "Error updating client", error: error.message });
   }
 });
+
 //Inventory - Stalls Inventory
 app.get("/api/inventory-stalls-inventory", async (req, res) => {
   const { location } = req.query;
