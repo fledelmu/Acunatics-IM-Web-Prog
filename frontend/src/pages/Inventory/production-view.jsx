@@ -17,6 +17,9 @@ export default function InvProduction(){
     const [selectedProd, setSelectedProd] = useState(null)
 
     const [selectedDate, setSelectedDate] = useState(null)
+
+    const [records, setRecords] = useState([])
+    const [columns, setColumns] = useState([])
     
     return(
         <>
@@ -46,40 +49,32 @@ export default function InvProduction(){
                             />
                         </div>
                     </div>
-                    <div className="tableContent">
-                        <table className="inventory-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Product</th>
-                                    <th>Starting Weight</th>
-                                    <th>Ending Weight</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td>1</td>
-                                    <td>Pork</td>
-                                    <td>10</td>
-                                    <td>10</td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td>Beef</td>
-                                    <td>5</td>
-                                    <td>10</td>
-                                </tr>
-                                <tr>
-                                    <td>3</td>
-                                    <td>Chicken</td>
-                                    <td>8</td>
-                                    <td>10</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div className="table-container">
+                        {columns.length === 0 ? (
+                            <div>No records found</div>
+                        ) : (
+                            <>
+                                <div className='table-header'>  
+                                    {columns.map((col, index) => (
+                                        <div className="table-data" key={index}>{col}</div>
+                                    ))}
+                                </div>
+                                {records.length === 0 ? (
+                                    <div><h1>No records found</h1></div>
+                                ) : (
+                                    records.map((record, rowIndex) => (
+                                        <div className="table-row" key={rowIndex}>
+                                            {columns.map((col, colIndex) => (
+                                                <div key={colIndex}>{record[col] || "N/A"}</div>
+                                            ))}
+                                        </div>
+                                    ))
+                                )}
+                                
+                            </>
+                        )}
                     </div>
                 </div>
-                
             </div>
         </>
         

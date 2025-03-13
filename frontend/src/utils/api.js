@@ -261,3 +261,44 @@ export const searchProducts = async (data) => {
         return []
     }
 }
+
+//Manage/Item
+
+export const addItem = async (data) => {
+    try{
+        const response = await fetch("http://localhost:5000/api/manage-add-item", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data), 
+        })
+        return response.data
+    } catch (error) {
+        console.error("Error processing item: ", error)
+        return { success: false, message: "Error processing item" }
+    }
+}
+
+export const getItems = async () => {
+    try{
+        const response = await axios.get(`${URL}/api/manage-get-item`)
+        return response.data
+    } catch (error ){
+        console.error("Error retrieving items: ", error)
+        return []
+    }
+}
+
+export const searchItem = async (data) => {
+    try{
+        const response = await axios.get(`${URL}/api/manage-search-item`, {
+            params: {name: data.name}
+        })
+
+        return response.data
+    } catch (error) {
+        console.error("Error, item not found: ", error)
+        return []
+    }
+}
