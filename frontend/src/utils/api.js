@@ -79,16 +79,26 @@ export const addSuppliers = async (data) => {
     }
 }
 
-export const editSuppliers = async (data) => {
-    try{
-        const response = await axios.put(`${URL}/api/manage-edit-suppliers`)
+export const editSuppliers = async (editData) => {
+    try {
+        console.log("Sending data to backend:", editData) // Log the data being sent
+        const response = await axios.put(`${URL}/api/manage-edit-suppliers`, editData, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+
+        if (response.status !== 200) {
+            throw new Error(`HTTP error! Status: ${response.status}`)
+        }
+
+        console.log("Response from backend:", response.data) // Log the response from the backend
         return response.data
     } catch (error) {
-        console.error("Error processing suppliers:", error);
-        return { success: false, message: "Error processing suppliers" }
+        console.error("Error editing supplier:", error)
+        return null
     }
 }
-
 //Manage/Outlets
 export const fetchOutlets = async () => {
     try{
@@ -125,16 +135,26 @@ export const addOutlet = async (data) => {
     }
 }
 
-export const editOutlet = async (data) => {
-    try{
-        const response = await axios.put(`${URL}/api/manage-edit-outlet`)
+export const editOutlet = async (editData) => {
+    try {
+        console.log("Sending data to backend:", editData); 
+        const response = await axios.put(`${URL}/api/manage-edit-outlet`, editData, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
 
-        return response.data
+        if (response.status !== 200) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        console.log("Response from backend:", response.data); // Log the response from the backend
+        return response.data;
     } catch (error) {
-        console.error("Trouble editing outlet!", error)
-        return []
+        console.error("Error editing outlet:", error);
+        return null;
     }
-}
+};
 
 //Manage/Clients
 export const getClients = async () => {
