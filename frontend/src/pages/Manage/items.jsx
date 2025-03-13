@@ -58,6 +58,11 @@ export default function Items(){
 
          console.log("clicked")
         try {
+
+            if(!type || !name || !unit || !price){
+                console.error("Enter all fields")
+                return
+            }
             if (selectedAction?.value === "Add") {
                 const addResponse = await addItem(data)
     
