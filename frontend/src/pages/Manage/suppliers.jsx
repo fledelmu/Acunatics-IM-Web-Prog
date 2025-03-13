@@ -2,7 +2,7 @@ import '../../App.css'
 import './manage.css'
 import {useState, useEffect} from 'react'
 import Select from 'react-select'
-import { fetchSuppliers, addSuppliers, searchSuppliers } from '../../utils/api'
+import { fetchSuppliers, addSuppliers, searchSuppliers, editSuppliers } from '../../utils/api'
 
 export default function Suppliers(){
     const actions = [
@@ -44,7 +44,7 @@ export default function Suppliers(){
     
     const handleSave = async () => {
         try {
-            //const updatedRecord = await updateOutlet(editData) 
+            const updatedRecord = await editSuppliers(editData) 
             setRecords(records.map(r => r.id === updatedRecord.id ? updatedRecord : r)) 
             setIsEditing(false) 
         } catch (error) {
