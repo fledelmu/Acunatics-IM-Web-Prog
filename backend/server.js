@@ -503,24 +503,25 @@ app.get("/api/manage-search-product", async(req, res) => {
 
 //Manage - Items
 app.post("/api/manage-add-item", async(req, res) => {
-  const { name, size, price } = req.body
+  const { name, type, unit, price } = req.body
 
-  try
+  console.log("Received Data:", req.body);
 
-  {
+  try{
     await db.query("START TRANSACTION")
 
-    const [productResult] = await db.query("SELECT * FROM Product_details WHERE product_name = ?", [name])
+    const [productResult] = await db.query("SELECT * FROM item_type WHERE item_name = ?", [name])
     const exists = productResult.length > 0
 
     if(exists){
       await db.query("ROLLBACK")
-      return res.status(400).json({message: "Product already exists!"})
+      return res.status(400).json({message: "Item already exists!"})
     }
 
-    await db.query("INSERT INTO Product_details (product_name, size, price) VALUES (?,?,?)", [name, size, price])
+    await db.query("INSERT INTO item_type (item_name, item_type, unit, price) VALUES (?, ?, ?, ?)", [name, type, unit, price])
 
     await db.query("COMMIT")
+    return res.status(201).json({ success: true, message: "Item added successfully!" })
   }
   catch (error) {
     console.error("Error adding product:", error)
@@ -532,7 +533,7 @@ app.get("/api/manage-get-item", async (req, res) =>{
   try {
     await db.query("START TRANSACTION")
 
-    const [getItems] = await db.query("SELECT * FROM product")
+    const [getItems] = await db.query("SELECT * FROM item_type")
     res.status(200).json(getItems)
   } catch (error) {
     console.error("Error no items!", error)
@@ -541,14 +542,14 @@ app.get("/api/manage-get-item", async (req, res) =>{
 })
 
 app.get("/api/manage-search-item", async(req, res) => {
-  const { product_name, product_size } = req.query
+  const { name } = req.query
 
   try
 
   {
     await db.query("START TRANSACTION")
 
-    const [searchItem] = await db.query("SELECT * FROM product WHERE product_name = ? AND product_size = ?", [product_name, product_size])
+    const [searchItem] = await db.query("SELECT * FROM item_type WHERE item_name = ?", [name])
 
     res.status(200).json(searchItem)
   } catch (error){

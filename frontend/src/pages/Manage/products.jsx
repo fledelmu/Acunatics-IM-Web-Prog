@@ -10,8 +10,14 @@ export default function Products(){
         {value: "Search", label: "Search"}
     ]
 
+    const sizes = [
+        {value: "S", label: "S"},
+        {value: "M", label: "M"},
+        {value: "L", label: "L"}
+    ]
+
     const [name, setName] = useState("")
-    const [size, setSize] = useState("")
+    const [size, setSize] = useState(sizes[0])
     const [price, setPrice] = useState("")
 
     const [selectedAction, setSelectedAction] = useState(actions[1])
@@ -34,7 +40,7 @@ export default function Products(){
            loadProducts()
        }, [])
        
-const handleButton = async () => {
+    const handleButton = async () => {
         const data = { name, price, size }
         console.log("clicked")
         try {
@@ -94,10 +100,13 @@ const handleButton = async () => {
                 {selectedAction?.value === "Add" && (
                     <>
                         <label>Size:</label>
-                        <input
-                            value={size}
-                            onChange={(e) => setSize(e.target.value)}
-                            placeholder="Enter size..."
+                        <Select
+                        className="selection"
+                        options={sizes}
+                        value={sizes.find(s => s.value === size)}
+                        onChange={(selectedOption) => setSize(selectedOption ? selectedOption.value : "")}
+                        isClearable
+                        placeholder="Select size..."
                         />
                     
                         <label>Price:</label>

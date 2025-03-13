@@ -11,7 +11,9 @@ export default function InvStall(){
     ]
 
     const [selectedLocation, setSelectedLocation] = useState(null);
-
+    const [records, setRecords] = useState([])
+    const [columns, setColumns] = useState([])
+    
     return(
         <div className="content">
             
@@ -30,56 +32,31 @@ export default function InvStall(){
                     </div>
                 </div>
                 
-                <div className="tableContent">
-                    <table className="inventory-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Age</th>
-                                <th>Gender</th>
-                                <th>Department</th>
-                                <th>Email</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>John Doe</td>
-                                <td>30</td>
-                                <td>Male</td>
-                                <td>IT</td>
-                                <td>john.doe@example.com</td>
-                            </tr>
-                            <tr>
-                                <td>Jane Smith</td>
-                                <td>27</td>
-                                <td>Female</td>
-                                <td>HR</td>
-                                <td>jane.smith@example.com</td>
-                            </tr>
-                            <tr>
-                                <td>Alice Johnson</td>
-                                <td>35</td>
-                                <td>Female</td>
-                                <td>Finance</td>
-                                <td>alice.johnson@example.com</td>
-                            </tr>
-                            <tr>
-                                <td>Michael Brown</td>
-                                <td>40</td>
-                                <td>Male</td>
-                                <td>Marketing</td>
-                                <td>michael.brown@example.com</td>
-                            </tr>
-                            <tr>
-                                <td>Robert Wilson</td>
-                                <td>29</td>
-                                <td>Male</td>
-                                <td>Sales</td>
-                                <td>robert.wilson@example.com</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                    <div className="table-container">
+                        {columns.length === 0 ? (
+                            <div>No records found</div>
+                        ) : (
+                            <>
+                                <div className='table-header'>  
+                                    {columns.map((col, index) => (
+                                        <div className="table-data" key={index}>{col}</div>
+                                    ))}
+                                </div>
+                                {records.length === 0 ? (
+                                    <div><h1>No records found</h1></div>
+                                ) : (
+                                    records.map((record, rowIndex) => (
+                                        <div className="table-row" key={rowIndex}>
+                                            {columns.map((col, colIndex) => (
+                                                <div key={colIndex}>{record[col] || "N/A"}</div>
+                                            ))}
+                                        </div>
+                                    ))
+                                )}
+                                
+                            </>
+                        )}
+                    </div>
             </div>
         </div>
     )
