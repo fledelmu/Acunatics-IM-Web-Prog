@@ -27,9 +27,6 @@ export const processDelivery = async (data) => {
     }
 }
 
-
-
-
 // Records Tabs
 export const fetchRecords = async (type) =>{
     try{
@@ -82,53 +79,26 @@ export const addSuppliers = async (data) => {
     }
 }
 
-export const editSuppliers = async (data) => {
-    try{
-        const response = await axios.put(`${URL}/api/manage-edit-suppliers`)
+export const editSuppliers = async (editData) => {
+    try {
+        console.log("Sending data to backend:", editData) // Log the data being sent
+        const response = await axios.put(`${URL}/api/manage-edit-suppliers`, editData, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+
+        if (response.status !== 200) {
+            throw new Error(`HTTP error! Status: ${response.status}`)
+        }
+
+        console.log("Response from backend:", response.data) // Log the response from the backend
         return response.data
     } catch (error) {
-        console.error("Error processing suppliers:", error);
-        return { success: false, message: "Error processing suppliers" }
+        console.error("Error editing supplier:", error)
+        return null
     }
 }
-// Manage/Employees tab
-
-export const addEmployee = async (data) => {
-    try{
-        const response = await axios.post(`${URL}/api/manage-add-employee`, data)
-        console.log("Response received", response)
-
-        return response.data
-    } catch (error) {
-        console.error("Error processing employees: ", error)
-        return { success: false, message: "Error processing employees" }
-    }
-}
-
-export const fetchEmployees = async () => {
-    try{
-        const response = await axios.get(`${URL}/api/manage-get-employee`)
-
-        return response.data
-    } catch (error) {
-        console.error("Trouble retrieving employees!", error)
-        return []
-    }
-}
-
-export const searchEmployee = async (data) => {
-    try{
-        const response = await axios.get(`${URL}/api/manage-search-employee`, {
-            params: { name: data.name }
-        });
-
-        return response.data
-    } catch (error) {
-        console.error("Trouble searching employees!", error)
-        return []
-    }
-}
-
 //Manage/Outlets
 export const fetchOutlets = async () => {
     try{
@@ -165,6 +135,27 @@ export const addOutlet = async (data) => {
     }
 }
 
+export const editOutlet = async (editData) => {
+    try {
+        console.log("Sending data to backend:", editData); 
+        const response = await axios.put(`${URL}/api/manage-edit-outlet`, editData, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.status !== 200) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        console.log("Response from backend:", response.data); // Log the response from the backend
+        return response.data;
+    } catch (error) {
+        console.error("Error editing outlet:", error);
+        return null;
+    }
+};
+
 //Manage/Clients
 export const getClients = async () => {
     try{
@@ -198,6 +189,17 @@ export const addClient = async (data) => {
     } catch (error) {
         console.error("Error processing client: ", error.response?.data || error.message)
         return { success: false, message: "Error processing client" }
+    }
+}
+
+export const editClient = async (data) => {
+    try{
+        const response = await axios.put("/api/manage-edit-client", data)
+
+        return response.data
+    } catch (error) {
+        console.error("Error editing client!", error)
+        return []
     }
 }
 
@@ -237,8 +239,17 @@ export const searchProducts = async (data) => {
     }
 }
 
-//Manage/Item
+export const editProduct = async (data) => {
+    try{
+        const response = await axios.get(`${URL}/api/manage-edit-product`)
+        return response.data
+    } catch (error) {
+        console.error("Trouble editing product! ", error)
+        return []
+    }
+}
 
+//Manage/Item
 export const addItem = async (data) => {
     try{
         const response = await fetch(`${URL}/api/manage-add-item`, {
@@ -278,6 +289,15 @@ export const searchItem = async (data) => {
     }
 }
 
+export const editItem = async (data) => {
+    try{
+        const response = await axios.get(`${URL}/api/manage-`)
+        return response.data
+    } catch (error) {
+        console.error("Error editing item: ", error)
+        return []
+    }
+}
 //Inventory 
 
 export const addInventory = async (data) => {
