@@ -1,6 +1,6 @@
 import '../../App.css'
 import './process.css'
-import CreatableSelect from 'react-select/creatable'
+import Select from 'react-select'
 import {useState, useEffect} from 'react'
 import { processProduction, fetchRecords } from '../../utils/api'
 
@@ -72,8 +72,7 @@ export default function Production(){
             <div className="form">
                 <div><h3>Add Process:</h3></div>
                
-                <CreatableSelect
-                className="selection"
+                <Select
                 options={options}
                 value={selected}
                 onChange={setSelected}

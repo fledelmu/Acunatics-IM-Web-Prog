@@ -28,7 +28,7 @@ export default function InvProduction(){
                             <label><h3>Product:</h3></label>
                         </div>
                         <div>
-                            <CreatableSelect
+                            <input
                             className="selection"
                             options={product}
                             value={selectedProd}

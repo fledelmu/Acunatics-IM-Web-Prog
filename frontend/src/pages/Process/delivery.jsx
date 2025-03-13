@@ -1,8 +1,9 @@
     import '../../App.css'
     import './process.css'
     import {useState} from 'react'
-    import CreatableSelect from 'react-select/creatable'
-
+    import Select from 'react-select'
+    import DatePicker from 'react-datepicker'
+    import { processDelivery, fetchRecords} from '../../utils/api'
     export default function Delivery(){
         const options = [
             { value: "Material", label: "Material" }
@@ -20,26 +21,56 @@
         const [records, setRecords] = useState([])
         const [columns, setColumns] = useState([])
         
-        const addDelivery = async () => {
-            console.log('clicked')
-            
-            const type = selectedType.value
+        const [name, setName] = useState('')
+        const [product, setProduct] = useState('')
+        const [outlet, setOutlet] = useState('')
+        const [location, setLocation] = useState('')
+        const [selectedDate, setSelectedDate] = useState('')
 
+        const addDelivery = async () => {
+            console.log('clicked');
+        
+            if (!selectedType || !selected || !target || !location|| !product) {
+                alert("Please fill in all fields");
+                return;
+            }
+        
             const data = {
-                type,
+                type: type,
                 target: target,
                 location: location,
+                product: product,
                 date: date,
-                order_items: order_items
+                quantity: quantity,
+                price: price
+            };
+        
+            try {
+                await processDelivery(data);
+
+                if(selectedType?.value === "Outlet"){
+                    let table = await fetchRecords('delivery-records');
+                    setColumns(Object.keys(table[0]));
+                    setRecords(table);
+
+                    setName('');
+                    setLocation('');
+                }
+                
+
+            } catch (error) {
+                console.error("Error in addDelivery:", error);
+                alert("An error occurred while processing delivery.");
             }
-        }
+        };
+        
         return (
             <div className="content">
                 <div><h2>Delivery Report</h2></div>
                 <div className="form">
                     <div><h3>Add Process:</h3></div>
                         
-                            <CreatableSelect
+                            <Select
                             className="selection"
                             options={typeOptions}
                             value={selectedType}
@@ -50,58 +81,54 @@
 
                         <button className="input-button">Refresh</button>  
 
-                            <CreatableSelect
-                            className="selection"
-                            options={options}
-                            value={selected}
-                            onChange={setSelected}
-                            isClearable
-                            placeholder={selectedType?.value === "Outlet" ? "Location" : "Client"}
-                            />
+                        <input
+                        value={name}
+                        placeholder={selectedType?.value === "Outlet" ? "Outlet" : "Client"}
+                        />
                         
-                            <CreatableSelect
-                            className="selection"
-                            options={options}
-                            value={selected}
-                            onChange={setSelected}
-                            isClearable
-                            placeholder="Product..."
+                        {selectedType?.value === "Client" && (
+                            <input
+                            value={location}
+                            placeholder="Enter location..."
                             />
-                        
+                        )}
+                        <input
+                        value={product}
+                        placeholder="Enter product..."
+                        />                 
                         
                         <input placeholder="Enter quantity..."></input> 
                         
                         
                         <input placeholder="Enter price..."></input>
-                        
-                    <button className="input-button">Add</button>
+
+                    <button className="input-button" onClick={addDelivery}>Add</button>
                 </div>
                 
-                <div className="tableContent">
-                    <table className="process-table">
-                        <thead>
-                            <tr>
-                                {columns.map((column, index) => (
-                                    <th key={index}>{column.replace(/_/g, ' ')}</th> 
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {records.length > 0 ? (
-                                records.map((record, index) => (
-                                    <tr key={index}>
-                                        {columns.map((column, colIndex) => (
-                                            <td key={colIndex}>{record[column]}</td>
-                                        ))}
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={columns.length || 1}>No records found</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                <div className="table-container">
+                    {columns.length === 0 ? (
+                        <div> No records found</div>
+                    ) : (
+                        <>
+                        <div className='table-header'>
+                            {columns.map((col, index) => (
+                                <div className="table-data" key={index}>{col}</div>
+                            ))}
+                        </div>
+                        {records.length === 0 ? (
+                            <div></div>
+                        ) : (
+                            records.map((record, rowIndex) => (
+                                <div className='table-row' key={rowIndex}>
+                                    {columns.map((col, colIndex) => (
+                                        <div key={colIndex}>{record[col] || "???"}</div>
+                                    ))}
+                                    <button className='table-button'>Edit</button>
+                                </div>
+                            ))
+                        )}
+                        </>
+                    )}
                 </div>
             </div>
         )

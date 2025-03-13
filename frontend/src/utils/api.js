@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const URL = "http://localhost:5000"
 
-// Production Tab
+// Process Tabs
 export const processProduction = async (data) =>{
     try{
         const response = await axios.post(`${URL}/api/process-production`, data)
@@ -17,7 +17,7 @@ export const processProduction = async (data) =>{
 export const processDelivery = async (data) => {
     try{
         const response = await axios.post(`${URL}/api/process-delivery`,
-            
+            data
         )
 
         return response.data
@@ -26,6 +26,9 @@ export const processDelivery = async (data) => {
         return { success: false, message: "Error processing delivery" }
     }
 }
+
+
+
 
 // Records Tabs
 export const fetchRecords = async (type) =>{

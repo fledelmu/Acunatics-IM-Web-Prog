@@ -29,25 +29,16 @@ export default function InvProduction(){
                     <div><h2>Production Inventory</h2></div>
                     <div className="inventory-form">
                         <div>
-                            <Select
+                            <input
                             className="selection"
                             options={product}
                             value={selectedProd}
                             onChange={setSelectedProd}
                             isClearable
-                            placeholder= {getSelected ? (getSelected.value === 'Material' ? 'Item' : 'Product') : 'Item'}
+                            placeholder= "Enter product..."
                             />
                         </div>
-                        <label><h3>Pick Date</h3></label>
-                        <div>
-                            <DatePicker 
-                            selected={selectedDate} 
-                            onChange={(date) => setSelectedDate(date)} 
-                            dateFormat="yyyy-MM-dd" 
-                            isClearable
-                            placeholderText="Select a date"
-                            />
-                        </div>
+                        <button className="input-button">Proceed</button>
                     </div>
                     <div className="table-container">
                         {columns.length === 0 ? (
