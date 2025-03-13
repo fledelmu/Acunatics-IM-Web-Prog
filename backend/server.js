@@ -658,12 +658,10 @@ app.get("/api/inventory-stalls-inventory", async (req, res) => {
 
 //Inventory - add - production - invetory
 app.post("/api/inventory-add-production-inventory", async (req, res) => {
-  const { product_name, size, quantity} = req.body;
+  const { product_name, size, quantity } = req.body;
   const now = new Date().toISOString();
 
-  console.log("Received request body:", req.body);
-
-  if (!product_name || !quantity) {
+  if (!product_name || !size || !quantity) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -671,38 +669,44 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     await db.query("START TRANSACTION");
 
     // Check if product details exist
-    const [productDetailsResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ? && size = ?", [product_name, size]);
-    let productId;
+    const [productDetailsResult] = await db.query(
+      "SELECT product_id FROM Product_details WHERE product_name = ? AND size = ?",
+      [product_name, size]
+    );
 
+    let productId;
     if (productDetailsResult.length > 0) {
-      productId = productDetailsResult[0].product_id;
+        productId = productDetailsResult[0].product_id;  // Access the first row's product_id
     } else {
-      // Insert into Product_details
-      const [addProductDetails] = await db.query("INSERT INTO Product_details (product_name) VALUES (?)", [product_name]);
-      productId = addProductDetails.insertId;
+        console.log("No matching product found.");
+        await db.query("ROLLBACK");  // Rollback transaction if product doesn't exist
+        return res.status(400).json({ message: "Product does not exist. Please add it first." });
     }
 
-    // Insert into inventory
-    const [addInventory] = await db.query(
+    // Insert into product table
+    await db.query(
+      `INSERT INTO product (product_id, quantity) 
+      VALUES (?, ?) 
+      ON DUPLICATE KEY UPDATE quantity = quantity + ?`,
+      [productId, quantity, quantity]
+    );
+
+    // Insert into inventory table
+    await db.query(
       `INSERT INTO inventory (product, date) VALUES (?, ?)`,
       [productId, now]
-    );
-    const inventoryId = addInventory.insertId;
-
-    // Corrected: Insert into product table using product_id for product_name
-    await db.query(
-      `INSERT INTO product (product_name, quantity) VALUES (?, ?)`,
-      [productId, quantity]
     );
 
     await db.query("COMMIT");
     res.status(201).json({ message: "Production inventory added successfully" });
+
   } catch (error) {
     await db.query("ROLLBACK");
     console.error("Error adding production inventory:", error);
     res.status(500).json({ message: "Error adding production inventory", error: error.message });
   }
-})
+});
+
 
 
 app.get("/api/inventory-view-production-inventory", async (req, res) =>{
@@ -714,8 +718,8 @@ app.get("/api/inventory-view-production-inventory", async (req, res) =>{
       SUM(p.quantity) AS total
       FROM Product_details pd
       JOIN product p 
-      ON pd.product_id = p.product_name 
-      GROUP BY pd.product_id, pd.product_name, pd.size
+      ON pd.product_id = p.product_name
+      GROUP BY pd.size
     `)
     res.json(getDetails)
   } catch (error) {
