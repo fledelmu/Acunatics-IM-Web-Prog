@@ -15,7 +15,7 @@ export default function Suppliers(){
     const [name, setName] = useState("")
     const [contact, setContact] = useState("")
     const [address, setAddress] = useState("")
-
+    
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
     
