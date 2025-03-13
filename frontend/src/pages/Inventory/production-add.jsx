@@ -1,20 +1,60 @@
 import '../../App.css'
 import './inventory.css'
-import {useState} from "react"
-import CreatableSelect from 'react-select/creatable'
+import { useState } from "react"
+import  Select  from 'react-select'
+import { addInventory, viewInventory } from '../../utils/api'
 
 export default function InvProduction(){
-    const [getSelected, setSelected] = useState(null)
 
-    const product = [
-        { value: "Chicharon 1", label: "Chicharon 1" }
+    const sizes = [
+        {value: "S", label: "S"},
+        {value: "M", label: "M"},
+        {value: "L", label: "L"}
     ]
 
-    const [selectedProd, setSelectedProd] = useState(null)
+    const [product, setProduct] = useState("")
+    const [size, setSize] = useState(sizes[0])
+    const [quantity, setQuantity] = useState("")
 
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
 
+    const handleClick = async () => {
+        console.log("clicked")
+
+        if (!product || !size || !quantity) {
+            console.error("Missing required fields");
+            return;
+        }
+
+        const data = {
+            product: product,
+            size: size.value,
+            quantity: quantity
+        }
+
+        try{
+            const response = await addInventory(data)
+
+            setProduct("")
+            setQuantity("")
+
+            const table = await viewInventory();
+            console.log("Table data:", table)
+            if (table.length > 0) {
+                setRecords(table);
+                setColumns(Object.keys(table[0]));  
+            } else {
+                setRecords([]);
+                setColumns([]);
+            }
+
+            
+        } catch (error) {
+            console.error("Error executing action:", error)
+            alert("An error occurred while fulfilling the request.")
+        }
+    }
     return(
         <>
             <div className="content">
@@ -30,20 +70,28 @@ export default function InvProduction(){
                         <div>
                             <input
                             className="selection"
-                            options={product}
-                            value={selectedProd}
-                            onChange={setSelectedProd}
-                            isClearable
-                            placeholder= "Product"
+                            value={product}
+                            onChange={(e) => setProduct(e.target.value)}
+                            placeholder= "Enter product..."
                             />
                         </div>
                         <div>
                             <label><h3>Quantity:</h3></label>
                         </div>
                         <div>
-                            <input placeholder='Enter quantity'></input>
+                            <input 
+                            value={quantity}
+                            onChange={(e) => setQuantity(e.target.value)}
+                            placeholder='Enter quantity...'/>
                         </div>
-                        <button className="input-button">Add</button>
+                        <Select
+                        className="selection"
+                        options={sizes}
+                        value={sizes.find(s => s.value === size)}
+                        onChange={(selectedOption) => setSize(selectedOption ? selectedOption.value : "")}
+                        placeholder="Select size..."
+                        />
+                        <button className="input-button" onClick={handleClick}>Add</button>
                     </div>
                     <div className="table-container">
                         {columns.length === 0 ? (

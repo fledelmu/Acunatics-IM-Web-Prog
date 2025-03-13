@@ -305,3 +305,26 @@ export const searchItem = async (data) => {
         return []
     }
 }
+
+//Inventory - add
+
+export const addInventory = async (data) => {
+    try{
+        const response = await axios.post(`${URL}/api/inventory-add-production-inventory`, data)
+        return response.data
+    } catch (error){
+        console.error("Error, inserting inventory: ", error)
+        return []
+    }
+}
+
+export const viewInventory = async () => {
+    try{
+        const response = await axios.get(`${URL}/api/inventory-view-production-inventory`)
+        console.log("Inventory API response:", response.data)
+        return response.data
+    } catch (error) {
+        console.error("Error retrieving inventory: ", error)
+        return []
+    }
+}

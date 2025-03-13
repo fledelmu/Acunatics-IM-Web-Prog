@@ -34,7 +34,6 @@ export default function InvProduction(){
                             options={product}
                             value={selectedProd}
                             onChange={setSelectedProd}
-                            isClearable
                             placeholder= "Enter product..."
                             />
                         </div>
