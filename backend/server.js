@@ -658,12 +658,12 @@ app.get("/api/inventory-stalls-inventory", async (req, res) => {
 
 //Inventory - add - production - invetory
 app.post("/api/inventory-add-production-inventory", async (req, res) => {
-  const { product_name, quantity, size} = req.body;
+  const { product_name, size, quantity} = req.body;
   const now = new Date().toISOString();
 
   console.log("Received request body:", req.body);
 
-  if (!product_name || !quantity || !price || !product_size) {
+  if (!product_name || !quantity) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -671,7 +671,7 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     await db.query("START TRANSACTION");
 
     // Check if product details exist
-    const [productDetailsResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ?", [product_name]);
+    const [productDetailsResult] = await db.query("SELECT product_id FROM Product_details WHERE product_name = ? && size = ?", [product_name, size]);
     let productId;
 
     if (productDetailsResult.length > 0) {
@@ -691,8 +691,8 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
 
     // Corrected: Insert into product table using product_id for product_name
     await db.query(
-      `INSERT INTO product (product_name, product_size, quantity, price) VALUES (?, ?, ?, ?)`,
-      [productId, product_size, quantity]
+      `INSERT INTO product (product_name, quantity) VALUES (?, ?)`,
+      [productId, quantity]
     );
 
     await db.query("COMMIT");
@@ -708,10 +708,18 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
 app.get("/api/inventory-view-production-inventory", async (req, res) =>{
   try{
     const [getDetails] = await db.query(`
-      SELECT
-      pd.product_name
-      FROM Product_details`)
+      SELECT                   
+      pd.product_name,                    
+      pd.size, 
+      SUM(p.quantity) AS total
+      FROM Product_details pd
+      JOIN product p 
+      ON pd.product_id = p.product_name 
+      GROUP BY pd.product_id, pd.product_name, pd.size
+    `)
+    res.json(getDetails)
   } catch (error) {
-
+    console.error("Error fetching inventory:", error)
+    res.status(500).json({ error: error.message })
   }
 })
