@@ -27,9 +27,6 @@ export const processDelivery = async (data) => {
     }
 }
 
-
-
-
 // Records Tabs
 export const fetchRecords = async (type) =>{
     try{

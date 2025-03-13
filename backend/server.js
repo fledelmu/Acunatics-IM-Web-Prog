@@ -936,56 +936,84 @@ app.put("/api/manage-edit-client", async (req, res) => {
 });
 
 //Inventory - Stalls Inventory
+app.get("/api/inventory-stalls-inventory-search", async (req, res) => {
+  const { location } = req.query;
+  console.log("Received location:", location);
+
+  try {
+    // Query to find branch ID based on location
+    const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [location]);
+    if (branchResult.length === 0) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+
+    const branchId = branchResult[0].branch_id;
+
+    // Query to fetch inventory data for the found branch ID
+    const [inventoryResult] = await db.query(`
+      SELECT 
+        bi.inventory_id, 
+        bi.order_id, 
+        bi.date, 
+        bp.product_id, 
+        bp.quantity, 
+        bp.price 
+      FROM branch_inventory bi
+      JOIN branch_product bp ON bi.inventory_id = bp.inventory_id
+      WHERE bi.branch_id = ?
+    `, [branchId]);
+
+    // Respond with the inventory data
+    res.json(inventoryResult);
+  } catch (error) {
+    console.error("Error fetching stalls inventory:", error);
+    res.status(500).json({ message: "Error fetching stalls inventory", error: error.message });
+  }
+});
+
 app.get("/api/inventory-stalls-inventory", async (req, res) => {
   const { location } = req.query;
 
-  if (!id || (!name && !contact)) {
-    return res.status(400).json({ message: "Client ID and at least one field to update are required" });
+  // Log the received location parameter
+  console.log("Received location:", location);
+
+  // Check if location is provided
+  if (!location) {
+    return res.status(400).json({ message: "Location is required" });
   }
 
   try {
-    await db.query("START TRANSACTION");
-
-    let updateFields = [];
-    let updateValues = [];
-
-    if (name) {
-      updateFields.push("name = ?");
-      updateValues.push(name);
-    }
-    if (contact) {
-      updateFields.push("contact = ?");
-      updateValues.push(contact);
+    // Query to find branch ID based on location
+    const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [location]);
+    if (branchResult.length === 0) {
+      return res.status(404).json({ message: "Branch not found" });
     }
 
-    if (updateFields.length === 0) {
-      await db.query("ROLLBACK");
-      return res.status(400).json({ message: "No valid fields provided for update" });
-    }
+    const branchId = branchResult[0].branch_id;
 
-    updateValues.push(id);
+    // Query to fetch inventory data for the found branch ID
+    const [inventoryResult] = await db.query(`
+      SELECT 
+        bi.inventory_id, 
+        bi.order_id, 
+        bi.date, 
+        bp.product_id, 
+        bp.quantity, 
+        bp.price 
+      FROM branch_inventory bi
+      JOIN branch_product bp ON bi.inventory_id = bp.inventory_id
+    `);
 
-    const [updateResult] = await db.query(
-      `UPDATE client SET ${updateFields.join(", ")} WHERE client_id = ?`,
-      updateValues
-    );
-
-    if (updateResult.affectedRows === 0) {
-      await db.query("ROLLBACK");
-      return res.status(404).json({ message: "Client not found or no changes made" });
-    }
-
-    await db.query("COMMIT");
-    res.status(200).json({ message: "Client updated successfully" });
+    // Respond with the inventory data
+    res.json(inventoryResult);
   } catch (error) {
-    await db.query("ROLLBACK");
-    console.error("Error updating client:", error);
-    res.status(500).json({ message: "Error updating client", error: error.message });
+    console.error("Error fetching stalls inventory:", error);
+    res.status(500).json({ message: "Error fetching stalls inventory", error: error.message });
   }
 });
 
 //Inventory - Stalls Inventory
-app.post("/api/inventory-add-production-inventory", async (req, res) => {
+app.post("/api/add-stall-inventory", async (req, res) => {
   const { product_name, size, quantity } = req.body;
   const now = new Date().toISOString();
 
@@ -1023,7 +1051,6 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     if (!productDId) {
       return res.status(400).json({ message: "Failed to retrieve or insert product." });
     }
-
 
     const [addProduct] = await db.query("INSERT INTO product (product_name, quantity) VALUES (?,?)", [productDId, quantity])
 
