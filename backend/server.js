@@ -236,65 +236,6 @@ app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
 
-
-//Manage - Managers
-
-
-app.post("/api/add-manager", async (req, res) => {
-  const { name, contact } = req.body
-
-  try{
-    await db.query("START TRANSACTION")
-
-    const [nameResult] = await db.query("SELECT name FROM manager WHERE name = ?", [name])
-    const exists = nameResult.length > 0
-
-    if (exists) {
-      await db.query("ROLLBACK")
-      return res.status(400).json({ message: "Manager already exists!" })
-    }
-
-    await db.query("INSERT INTO manager (name, contact) VALUES (?,?)", [name, contact])
-
-    await db.query("COMMIT")
-
-    res.status(201).json({ message: "Manager added successfully!" })
-  } catch (error) {
-    console.error("Error adding manager:", error)
-    res.status(500).json({ message: "Internal server error" })
-  }
-})
-
-app.get("/api/search-manager", async (req, res) => {
-  const { name } = req.query
-
-  try{
-    const [searchName] = await db.query("SELECT name FROM manager WHERE name = ?", [name])
-
-    if (searchName.length > 0){
-      res.status(200).json(searchName)
-    } else {
-      res.status(404).json({ message: "Manager not found", data: []})
-    }
-  } catch (error) {
-    console.error("Error searching manager:", error)
-    res.status(500).json({data: []})
-  }
-})
-
-app.get("/api/get-managers", async (req, res) => {
-
-  try{
-    const [getManagers] = await db.query("SELECT * FROM manager" )
-
-    res.status(200).json(getManagers);
-  } catch (error) {
-    console.error("Error retrieving managers:", error)
-    res.status(500).json({ message: "Internal server error", data: [] });
-  }
-})
-
-
 //Manage - Suppliers
 
 app.get("/api/manage-get-suppliers", async (req,res) => {
@@ -348,60 +289,54 @@ app.post("/api/manage-add-suppliers", async(req, res) => {
   }
 })
 
-//Manage - Employees
-app.post("/api/manage-add-employee", async (req, res) => {
-  const { name, contact } = req.body;
+app.put("/api/manage-edit-suppliers", async(req, res) => {
+
+  const { id, name, contact, address} = req.body
+
+  if (!id || !name && !contact && !address) {
+    return res.status(400).json({ message: "Product ID and at least one field to update are required" });
+  }
 
   try {
     await db.query("START TRANSACTION");
 
-    const [nameResult] = await db.query("SELECT * FROM employee WHERE name = ?", [name]);
-    const exists = nameResult.length > 0;
+    let updateFields = [];
+    let updateValues = [];
 
-    if (exists) {
-      await db.query("ROLLBACK");
-      return res.status(400).json({ message: "Employee already exists!" });
+    if (size) {
+      updateFields.push("name = ?");
+      updateValues.push(name);
+    }
+    if (quantity !== undefined) {
+      updateFields.push("contact = ?");
+      updateValues.push(contact);
     }
 
-    await db.query("INSERT INTO employee (name, contact) VALUES (?, ?)", [name, contact]);
+    if (updateFields.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ message: "No valid fields provided for update" });
+    }
+
+    updateValues.push(id);
+
+
+    const [updateResult] = await db.query(
+      `UPDATE supplier SET ${updateFields.join(", ")} WHERE supplier_id = ?`,
+      updateValues
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({ message: "Supplier not found or no changes made" });
+    }
 
     await db.query("COMMIT");
-
-
-    return res.status(201).json({ success: true, message: "Employee added successfully!" });
+    res.status(200).json({ message: "Supplier updated successfully" });
 
   } catch (error) {
     await db.query("ROLLBACK");
-    console.error("Error adding employee:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
-  }
-});
-
-
-app.get("/api/manage-get-employee", async (req, res) =>{
-  try {
-    await db.query("START TRANSACTION")
-
-    const [getEmployees] = await db.query("SELECT * FROM employee")
-    res.status(200).json(getEmployees)
-  } catch (error) {
-    console.error("Error no employees!", error)
-    res.status(500).json({data: []})
-  }
-})
-
-app.get("/api/manage-search-employee", async(req, res) => {
-  const { name } = req.query
-
-  try {
-    await db.query("START TRANSACTION")
-
-    const [searchEmployee] = await db.query("SELECT * FROM employee WHERE name = ?", [name])
-
-    res.status(200).json(searchEmployee)
-  } catch (error){
-    console.error("Error, employee not found! ", error)
-    res.status(500).json({data: []})
+    console.error("Error updating product:", error);
+    res.status(500).json({ message: "Error updating product", error: error.message });
   }
 })
 
