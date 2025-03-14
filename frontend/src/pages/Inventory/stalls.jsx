@@ -12,19 +12,6 @@ export default function InvStall(){
             
             <div className="inventory-form-container">
                 <div><h2>Stalls Inventory</h2></div>
-                <div className="inventory-form">
-                    <div>
-                        <input
-                            className="selection"
-                            value={location}
-                            onChange={setSelectedLocation}
-                            isClearable
-                            placeholder="Location"
-                        />
-                    </div>
-                    <button className="input-button">Search</button>
-                </div>
-                
                     <div className="table-container">
                         {columns.length === 0 ? (
                             <div>No records found</div>

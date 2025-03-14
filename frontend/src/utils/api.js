@@ -38,6 +38,7 @@ export const processSupply = async (data) => {
     }
 }
 
+
 // Records Tabs
 export const fetchRecords = async (type, data) =>{
     try{
@@ -53,6 +54,16 @@ export const fetchRecords = async (type, data) =>{
     }
 }
 
+export const fetchType = async (type) => {
+    try {
+        const response = await axios.get(`${URL}/api/${type}`)
+        
+        return response.data
+    } catch (error) {
+        console.error("Error fetching records:", error)
+        return []
+    }
+}
 // Manage Tabs
 // Manage/Suppliers tab
 
