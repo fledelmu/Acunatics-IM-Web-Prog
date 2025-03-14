@@ -5,17 +5,6 @@ import { viewInventory } from '../../utils/api'
 
 export default function InvProduction(){
 
-
-    const [getSelected, setSelected] = useState(null)
-
-    const product = [
-        { value: "Chicharon 1", label: "Chicharon 1" }
-    ]
-
-    const [selectedProd, setSelectedProd] = useState(null)
-
-    const [selectedDate, setSelectedDate] = useState(null)
-
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
     useEffect(() => {

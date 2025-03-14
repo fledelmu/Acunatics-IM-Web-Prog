@@ -123,7 +123,7 @@ app.post("/api/process-delivery", async (req, res) => {
       `SELECT i.inventory_id, p.quantity 
        FROM inventory i
        JOIN product p ON i.product = p.product_id
-       JOIN Product_details pd ON p.product_id = pd.product_id
+       JOIN Product_details pd ON p.product_name = pd.product_id
        WHERE pd.product_name = ? AND pd.size = ? 
        ORDER BY p.quantity DESC`,
       [product, size]
@@ -1187,45 +1187,51 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
 
     let productDId;
 
+    // First time input check
+
     if (productDetailsResult.length > 0) {
       productDId = productDetailsResult[0].product_id;
+
     } else {
       // Insert into Product_details
       const [addProductDetails] = await db.query(
         "INSERT INTO Product_details (product_name, size) VALUES (?, ?)",
         [product_name, size]
       );
+    
       productDId = addProductDetails.insertId;
-      console.log(`Inserted new product details with ID: ${productId}`);
+      console.log(`Inserted new product details with ID: ${productDId}`);
     }
 
 
     // Ensure `productId` is valid before proceeding
     if (!productDId) {
-      
       return res.status(400).json({ message: "Failed to retrieve or insert product." });
     }
 
-
-    const [addProduct] = await db.query("INSERT INTO product (product_name, quantity) VALUES (?,?)", [productDId, quantity])
-
-  
-    // Insert into inventory
-    const [addInventory] = await db.query(
-      `INSERT INTO inventory (product, date) VALUES (?, ?)`,
-      [productDId, now]
+    const [productExists] = await db.query(
+      "SELECT * FROM product WHERE product_name = ?",
+      [productDId]
     );
-    
-    console.log(`Inserted into inventory with ID: ${addInventory.insertId}`);
+
+    if (productExists.length === 0) {
+      // Insert new row if the product doesn't exist in `product`
+      await db.query(
+        "INSERT INTO product (product_name, quantity) VALUES (?, ?)",
+        [productDId, quantity]
+      );
+    } else {
+      // Update the quantity for an existing product entry
+      await db.query(
+        `UPDATE product 
+         SET quantity = quantity + ? 
+         WHERE product_name = ?`,
+        [quantity, productDId]
+      );
+    }
+
 
     // Insert into product table using `productId`
-    await db.query(
-      `INSERT INTO product (product_name, quantity) VALUES (?, ?) 
-       ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)`,
-      [productDId, quantity]
-    );
-    console.log(`Inserted/Updated product table with ID: ${productDId}`);
-
     await db.query("COMMIT");
     res.status(201).json({ message: "Production inventory added successfully" });
   } catch (error) {
@@ -1236,24 +1242,25 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
 });
 
 
-app.get("/api/inventory-view-production-inventory", async (req, res) =>{
-  try{
+app.get("/api/inventory-view-production-inventory", async (req, res) => {
+  try {
     const [getDetails] = await db.query(`
       SELECT                   
-      pd.product_name,                    
-      pd.size, 
-      SUM(p.quantity) AS total
-      FROM Product_details pd
-      JOIN product p 
-      ON pd.product_id = p.product_name
-      GROUP BY pd.size
-    `)
-    res.json(getDetails)
+        pd.product_name,                    
+        pd.size, 
+        SUM(p.quantity) AS total
+        FROM Product_details pd
+        JOIN product p 
+        ON pd.product_id = p.product_name
+      GROUP BY pd.product_name, pd.size
+    `);
+
+    res.json(getDetails);
   } catch (error) {
-    console.error("Error fetching inventory:", error)
-    res.status(500).json({ error: error.message })
+    console.error("Error fetching inventory:", error);
+    res.status(500).json({ error: error.message });
   }
-})
+});
 
 
 app.get("/api/inventory-view-supply-inventory", async (req, res) => {
