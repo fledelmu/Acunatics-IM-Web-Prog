@@ -298,13 +298,8 @@ export const editProduct = async (editData) => {
 //Manage/Item
 export const addItem = async (data) => {
     try{
-        const response = await fetch(`${URL}/api/manage-add-item`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(data), 
-        })
+        const response = await axios.post(`${URL}/api/manage-add-item`, data)
+        
         return response.data
     } catch (error) {
         console.error("Error processing item: ", error)

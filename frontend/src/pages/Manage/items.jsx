@@ -22,7 +22,7 @@ export default function Items(){
         {value: "Packaging", label: "Packaging"},
     ]
 
-    const [selectedAction, setSelectedAction] = useState("Search")
+    const [selectedAction, setSelectedAction] = useState(actions[1])
     
     const [type, setType] = useState("")
     const [name, setName] = useState("")
@@ -78,10 +78,10 @@ export default function Items(){
     
     const handleButton = async () => {
         const data = { 
-            item_name, 
+            item_name: name, 
             item_type: type?.value,  
             unit: unit?.value,  
-            price
+            price: price
         }
     
         try {

@@ -51,7 +51,7 @@ app.post("/api/process-production", async (req, res) =>{
     res.status(500).json({ message: "Error inserting records", error: error.message })
   }
 })
-  
+
 // Process - Delivery
 app.post("/api/process-delivery", async (req, res) => {
   const { type, target, location, product, quantity, price, size } = req.body;
@@ -77,7 +77,9 @@ app.post("/api/process-delivery", async (req, res) => {
         const [addClient] = await db.query("INSERT INTO client (name) VALUES (?)", [target]);
         clientId = addClient.insertId;
       }
-    } else if (type === "Outlet") {
+    } 
+    
+    if (type === "Outlet") {
       const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [target]);
       if (branchResult.length > 0) {
         branchId = branchResult[0].branch_id;
@@ -91,31 +93,55 @@ app.post("/api/process-delivery", async (req, res) => {
       throw new Error("Client or Branch must be provided");
     }
 
-    // Get product ID from Product table
-    const [productResult] = await db.query("SELECT product_id, quantity FROM product WHERE product_name = ?", [product]);
+    // Get product ID and quantity based on product name and size
+    const [productResult] = await db.query(
+      `SELECT p.product_id, p.quantity 
+       FROM product p 
+       JOIN Product_details pd ON p.product_id = pd.product_id 
+       WHERE pd.product_name = ? AND pd.size = ?
+       ORDER BY p.quantity DESC 
+       LIMIT 1`,
+      [product, size]
+    );
+
     if (productResult.length === 0) {
-      throw new Error("Product not found.");
+      throw new Error("Product not found with the selected size.");
     }
 
     let productId = productResult[0].product_id;
     let productQuantity = productResult[0].quantity;
+
+    console.log("Product ID:", productId, "Product Quantity:", productQuantity);
 
     // Ensure enough stock exists before proceeding
     if (productQuantity < quantity) {
       throw new Error("Not enough stock available.");
     }
 
-    // Fetch latest inventory entry for this product
+    // Fetch latest inventory entry for this product and size
     const [inventoryResult] = await db.query(
-      "SELECT inventory_id FROM inventory WHERE product = ? ORDER BY date DESC LIMIT 1",
-      [productId]
+      `SELECT i.inventory_id, i.quantity 
+       FROM inventory i
+       JOIN Product_details pd ON i.product = pd.product_id
+       WHERE pd.product_name = ? AND pd.size = ? 
+       ORDER BY i.date DESC 
+       LIMIT 1`,
+      [product, size]
     );
 
     if (inventoryResult.length === 0) {
-      throw new Error("No inventory found for this product.");
+      throw new Error("No inventory found for this product and size.");
     }
 
     inventoryId = inventoryResult[0].inventory_id;
+    let inventoryQuantity = inventoryResult[0].quantity;
+
+    console.log("Inventory ID:", inventoryId, "Inventory Quantity:", inventoryQuantity);
+
+    // Ensure enough stock exists in the inventory before proceeding
+    if (inventoryQuantity < quantity) {
+      throw new Error("Not enough stock available in inventory.");
+    }
 
     // Create Order Details
     const subtotal = quantity * price;
@@ -164,7 +190,10 @@ app.post("/api/process-delivery", async (req, res) => {
 
     // Subtract delivered quantity from Product Table
     let newProductQuantity = productQuantity - quantity;
-    await db.query("UPDATE product SET quantity = ? WHERE product_id = ?", [newProductQuantity, productId]);
+    await db.query(
+      "UPDATE product SET quantity = ? WHERE product_id = ?",
+      [newProductQuantity, productId]
+    );
 
     await db.query("COMMIT");
     res.status(201).json({ message: "Delivery process recorded successfully" });
@@ -174,6 +203,7 @@ app.post("/api/process-delivery", async (req, res) => {
     res.status(500).json({ message: "Error processing delivery", error: error.message });
   }
 });
+
 
 
 //Process - Supply
@@ -777,14 +807,14 @@ app.put("/api/manage-edit-product", async (req, res) => {
 
 //Manage - Items
 app.post("/api/manage-add-item", async(req, res) => {
-  const { name, type, unit, price } = req.body
+  const { item_name, item_type, unit, price } = req.body
 
   console.log("Received Data:", req.body);
 
   try{
     await db.query("START TRANSACTION")
 
-    const [productResult] = await db.query("SELECT * FROM item_type WHERE item_name = ?", [name])
+    const [productResult] = await db.query("SELECT * FROM item_type WHERE item_name = ?", [item_name])
     const exists = productResult.length > 0
 
     if(exists){
@@ -792,7 +822,7 @@ app.post("/api/manage-add-item", async(req, res) => {
       return res.status(400).json({message: "Item already exists!"})
     }
 
-    await db.query("INSERT INTO item_type (item_name, item_type, unit, price) VALUES (?, ?, ?, ?)", [name, type, unit, price])
+    await db.query("INSERT INTO item_type (item_name, item_type, unit, price) VALUES (?, ?, ?, ?)", [item_name, item_type, unit, price])
 
     await db.query("COMMIT")
     return res.status(201).json({ success: true, message: "Item added successfully!" })

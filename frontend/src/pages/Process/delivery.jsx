@@ -43,7 +43,7 @@ export default function Delivery() {
     }, []);
 
     const addDelivery = async () => {
-        if (!selectedType || !target || !product || !quantity || !price) {
+        if (!selectedType.value || !target || !product || !quantity || !price) {
             alert("Please fill in all fields");
             return;
         }
@@ -63,11 +63,11 @@ export default function Delivery() {
             let table = await fetchRecords('client-delivery-records');
 
 
-            if (selectedType === "Client") {
+            if (selectedType?.value === "Client") {
                 table = await fetchRecords('client-delivery-records');
             }
             
-            if (selectedType === "Outlet") {
+            if (selectedType?.value === "Outlet") {
                 table = await fetchRecords('outlet-delivery-records');
             }
 
@@ -145,8 +145,8 @@ export default function Delivery() {
                 <Select
                     className="selection"
                     options={sizes}
-                    value={setSelectedSize}
-                    onChange={setSelectedType}
+                    value={selectedSize}
+                    onChange={setSelectedSize}
                     isClearable
                     placeholder="Select Type..."
                 />

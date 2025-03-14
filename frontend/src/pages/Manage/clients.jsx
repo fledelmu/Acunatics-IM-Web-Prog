@@ -14,6 +14,7 @@ export default function Clients() {
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
     const [name, setName] = useState("")
+    const [contact, setContact] = useState("")
     const [isEditing, setIsEditing] = useState(false)
     const [editData, setEditData] = useState({})
 
@@ -35,6 +36,7 @@ export default function Clients() {
         setEditData({
             client_id: record.client_id,
             name: record.name,
+            contact: record.contact
         })
         setIsEditing(true)
     }
@@ -58,7 +60,7 @@ export default function Clients() {
     }
 
     const handleButton = async () => {
-        const data = { name }
+        const data = { name, contact }
         try {
             if (selectedAction?.value === "Add") {
                 const addResponse = await addClient(data)
@@ -67,6 +69,7 @@ export default function Clients() {
                     return
                 }
                 setName('')
+                setContact('')
                 const updatedClients = await getClients()
                 if (updatedClients.length > 0) {
                     setRecords(updatedClients)
@@ -79,6 +82,7 @@ export default function Clients() {
             if (selectedAction?.value === "Search") {
                 const result = await searchClient(data)
                 setName('')
+                setContact('')
                 if (result.length > 0) {
                     setRecords(result)
                     setColumns(Object.keys(result[0]))
@@ -112,7 +116,19 @@ export default function Clients() {
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter client name..."
                     />
+
+                    {selectedAction?.value === "Add" && (
+                        <>
+                            <label>Contact:</label>
+                            <input
+                                value={contact}
+                                onChange={(e) => setContact(e.target.value)}
+                                placeholder="Enter contact..."
+                            />
+                        </>
+                    )}
                 </>
+
                 <button className="input-button" onClick={handleButton}>Proceed</button>
             </div>
             
