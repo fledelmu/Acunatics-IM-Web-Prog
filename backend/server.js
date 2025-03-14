@@ -35,6 +35,7 @@ app.post("/api/process-production", async (req, res) =>{
 
     const[addBatch] = await db.query(`INSERT INTO batch (vat_num, date) VALUE (?,?)`, [vatNum, now])
     const batch_ref = addBatch.insertId
+    
 
     const[addTotalWeight] = await db.query(`INSERT INTO batch_details (batch_id, weight) VALUES (?,?)`, [batch_ref, total_weight])
     const details_ref = addTotalWeight.insertId
@@ -71,90 +72,63 @@ app.post("/api/process-delivery", async (req, res) => {
     // Handle Client / Outlet Logic
     if (type === "Client") {
       const [clientResult] = await db.query("SELECT client_id FROM client WHERE name = ?", [target]);
-      if (clientResult.length > 0) {
-        clientId = clientResult[0].client_id;
-      } else {
-        const [addClient] = await db.query("INSERT INTO client (name) VALUES (?)", [target]);
-        clientId = addClient.insertId;
-      }
+      clientId = clientResult.length ? clientResult[0].client_id : 
+        (await db.query("INSERT INTO client (name) VALUES (?)", [target]))[0].insertId;
     } 
     
     if (type === "Outlet") {
       const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [target]);
-      if (branchResult.length > 0) {
-        branchId = branchResult[0].branch_id;
-      } else {
-        const [addBranch] = await db.query("INSERT INTO branch (location) VALUES (?)", [target]);
-        branchId = addBranch.insertId;
-      }
+      branchId = branchResult.length ? branchResult[0].branch_id : 
+        (await db.query("INSERT INTO branch (location) VALUES (?)", [target]))[0].insertId;
     }
 
-    if (!clientId && !branchId) {
-      throw new Error("Client or Branch must be provided");
-    }
+    if (!clientId && !branchId) throw new Error("Client or Branch must be provided");
 
-    // Get product ID and quantity based on product name and size
+    // Get product ID and quantity
     const [productResult] = await db.query(
-      `SELECT p.product_id, p.quantity 
-       FROM product p 
-       JOIN Product_details pd ON p.product_id = pd.product_id 
-       WHERE pd.product_name = ? AND pd.size = ?
-       ORDER BY p.quantity DESC 
-       LIMIT 1`,
+      `SELECT * FROM Product_details WHERE product_name = ? AND size = ?`,
       [product, size]
     );
 
-    if (productResult.length === 0) {
-      throw new Error("Product not found with the selected size.");
-    }
+    if (!productResult.length) throw new Error("Product not found with the selected size.");
 
     let productId = productResult[0].product_id;
     let productQuantity = productResult[0].quantity;
 
-    console.log("Product ID:", productId, "Product Quantity:", productQuantity);
+    if (productQuantity < quantity) throw new Error("Not enough stock available.");
 
-    // Ensure enough stock exists before proceeding
-    if (productQuantity < quantity) {
-      throw new Error("Not enough stock available.");
-    }
-
-    // Fetch latest inventory entry for this product and size
+    // Fetch latest inventory entry
     const [inventoryResult] = await db.query(
-      `SELECT i.inventory_id, p.quantity 
+      `SELECT i.inventory_id, bp.batch_id, bp.product_id, p.quantity 
        FROM inventory i
-       JOIN product p ON i.product = p.product_id
+       JOIN batch_product bp ON i.batch_id = bp.inventory_id
+       JOIN product p ON bp.product_id = p.product_id
        JOIN Product_details pd ON p.product_name = pd.product_id
-       WHERE pd.product_name = ? AND pd.size = ? 
+       WHERE pd.product_name = ? AND pd.size = ?
        ORDER BY p.quantity DESC`,
       [product, size]
     );
 
-    if (inventoryResult.length === 0) {
-      throw new Error("No inventory found for this product and size.");
-    }
+    if (!inventoryResult.length) throw new Error("No inventory found for this product and size.");
 
     inventoryId = inventoryResult[0].inventory_id;
     let inventoryQuantity = inventoryResult[0].quantity;
 
-    console.log("Inventory ID:", inventoryId, "Inventory Quantity:", inventoryQuantity);
+    if (inventoryQuantity < quantity) throw new Error("Not enough stock available in inventory.");
 
-    // Ensure enough stock exists in the inventory before proceeding
-    if (inventoryQuantity < quantity) {
-      throw new Error("Not enough stock available in inventory.");
-    }
 
     // Create Order Details
     const subtotal = quantity * price;
     const [addOrderDetails] = await db.query(
-      "INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)",
-      [inventoryId, quantity, subtotal]
+      "INSERT INTO order_details (inventory_id, quantity, price, subtotal) VALUES (?, ?, ?, ?)",
+      [inventoryId, quantity,price, subtotal]
     );
     orderDetailsId = addOrderDetails.insertId;
 
     // Create Order
     const [addOrder] = await db.query(
-      "INSERT INTO orders (date, order_details) VALUES (?, ?)",
-      [now, orderDetailsId]
+      "INSERT INTO orders (order_details, date) VALUES (?, ?)",
+      [orderDetailsId, now]
     );
     orderId = addOrder.insertId;
 
@@ -165,35 +139,25 @@ app.post("/api/process-delivery", async (req, res) => {
         [clientId, orderId, location, now]
       );
     } else {
-      // Outlet deliveries do NOT need location
       await db.query(
         "INSERT INTO delivery (order_id, date) VALUES (?, ?)",
         [orderId, now]
       );
 
-      // Ensure branch inventory reflects the change
+      // Update branch inventory
       const [stockResult] = await db.query(
         "SELECT quantity FROM branch_inventory WHERE inventory_id = ? AND branch_id = ?",
         [inventoryId, branchId]
       );
 
-      if (stockResult.length === 0 || stockResult[0].quantity < quantity) {
-        throw new Error("Not enough stock in branch inventory.");
-      }
+      if (!stockResult.length) throw new Error("Branch inventory record not found.");
+      if (stockResult[0].quantity < quantity) throw new Error("Not enough stock in branch inventory.");
 
-      let newBranchStock = stockResult[0].quantity - quantity;
       await db.query(
         "UPDATE branch_inventory SET quantity = ? WHERE inventory_id = ? AND branch_id = ?",
-        [newBranchStock, inventoryId, branchId]
+        [stockResult[0].quantity - quantity, inventoryId, branchId]
       );
     }
-
-    // Subtract delivered quantity from Product Table
-    let newProductQuantity = productQuantity - quantity;
-    await db.query(
-      "UPDATE product SET quantity = ? WHERE product_id = ?",
-      [newProductQuantity, productId]
-    );
 
     await db.query("COMMIT");
     res.status(201).json({ message: "Delivery process recorded successfully" });
@@ -203,6 +167,7 @@ app.post("/api/process-delivery", async (req, res) => {
     res.status(500).json({ message: "Error processing delivery", error: error.message });
   }
 });
+
 
 
 
@@ -322,21 +287,22 @@ app.get("/api/client-delivery-records", async (req, res) => {
   try {
     let query = `
       SELECT 
-        d.delivery_id, 
-        c.name AS client_name,  
-        pd.product_name,
-        pd.size,
-        od.quantity,
-        od.subtotal, 
-        d.location,
-        DATE(d.date) AS date
-      FROM delivery d
-      JOIN client c ON d.client_id = c.client_id
-      JOIN orders o ON d.order_id = o.order_id
-      JOIN order_details od ON o.order_details = od.order_details_id
-      JOIN inventory i ON od.inventory_id = i.inventory_id
-      JOIN product p ON i.product= p.product_id
-      JOIN Product_details pd ON p.product_name = pd.product_id
+    d.delivery_id, 
+    c.name AS client_name,  
+    pd.product_name,
+    pd.size,
+    od.quantity,
+    od.subtotal, 
+    d.location,
+    DATE(d.date) AS date
+    FROM delivery d
+    JOIN client c ON d.client_id = c.client_id
+    JOIN orders o ON d.order_id = o.order_id
+    JOIN order_details od ON o.order_details = od.order_details_id
+    JOIN inventory i ON od.inventory_id = i.inventory_id
+    JOIN batch_product bp ON i.batch_id = bp.batch_id
+    JOIN product p ON bp.product_id = p.product_id
+    JOIN Product_details pd ON p.product_id = pd.product_id 
     `;
 
     const filterDate = [];
@@ -398,38 +364,38 @@ app.get("/api/outlet-delivery-records", async (req, res) => {
   const { date } = req.query;
 
   try {
-    let query = `
-      SELECT 
-        d.delivery_id, 
-        b.location AS branch,  
-        pd.product_name, 
-        pd.size, 
-        od.quantity,
-        od.subtotal, 
-        DATE(d.date) AS date
-      FROM delivery d
-      JOIN orders o ON d.order_id = o.order_id
-      JOIN order_details od ON o.order_details = od.order_details_id
-      JOIN inventory i ON od.inventory_id = i.inventory_id
-      JOIN product p ON i.product = p.product_id
-      JOIN Product_details pd ON p.product_name = pd.product_id
-      JOIN branch_inventory bi ON o.order_id = bi.order_id
-      JOIN branch b ON bi.branch_id = b.branch_id
-    `;
+      let query = `
+          SELECT 
+              d.delivery_id, 
+              c.name AS branch,  
+              pd.product_name, 
+              pd.size, 
+              od.quantity,
+              od.subtotal, 
+              DATE(d.date) AS date
+          FROM delivery d
+          JOIN orders o ON d.order_id = o.order_id
+          JOIN order_details od ON o.order_details = od.order_details_id
+          JOIN inventory i ON od.inventory_id = i.inventory_id
+          JOIN batch_product bp ON i.batch_id = bp.batch_id
+          JOIN product p ON bp.product_id = p.product_id  
+          JOIN Product_details pd ON p.product_id = pd.product_id
+          JOIN client c ON d.client_id = c.client_id  
+      `;
 
-    const filterDate = [];
+      const filterDate = [];
 
-    if (date) {
-      query += " WHERE d.date = ?";
-      filterDate.push(date);
-    }
+      if (date) {
+          query += " WHERE d.date = ?";
+          filterDate.push(date);
+      }
 
-    query += " ORDER BY DATE(d.date)";
+      query += " ORDER BY DATE(d.date)";
 
-    const [outletDeliveryRecords] = await db.query(query, filterDate);
-    res.json(outletDeliveryRecords);
+      const [outletDeliveryRecords] = await db.query(query, filterDate);
+      res.json(outletDeliveryRecords);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+      res.status(500).json({ error: err.message });
   }
 });
 
@@ -626,35 +592,6 @@ app.put("/api/manage-edit-outlet", async (req, res) => {
   }
 });
 
-app.put("/api/manage-edit-outlet", async (req, res) => {
-  const { id, location } = req.body;
-
-  if (!id || !location) {
-    return res.status(400).json({ message: "Outlet ID and location are required" });
-  }
-
-  try {
-    await db.query("START TRANSACTION");
-
-    const [updateResult] = await db.query(
-      "UPDATE branch SET location = ? WHERE branch_id = ?",
-      [location, id]
-    );
-
-    if (updateResult.affectedRows === 0) {
-      await db.query("ROLLBACK");
-      return res.status(404).json({ message: "Outlet not found or no changes made" });
-    }
-
-    await db.query("COMMIT");
-    res.status(200).json({ message: "Outlet updated successfully" });
-  } catch (error) {
-    await db.query("ROLLBACK");
-    console.error("Error updating outlet:", error);
-    res.status(500).json({ message: "Error updating outlet", error: error.message });
-  }
-});
-
 //Manage - Products
 
 app.post("/api/manage-add-product", async(req, res) => {
@@ -736,58 +673,6 @@ app.put("/api/manage-edit-product", async (req, res) => {
 
     const [updateResult] = await db.query(
       `UPDATE Product_details SET ${updateFields.join(", ")} WHERE product_id = ?`,
-      updateValues
-    );
-
-    if (updateResult.affectedRows === 0) {
-      await db.query("ROLLBACK");
-      return res.status(404).json({ message: "Product not found or no changes made" });
-    }
-
-    await db.query("COMMIT");
-    res.status(200).json({ message: "Product updated successfully" });
-  } catch (error) {
-    await db.query("ROLLBACK");
-    console.error("Error updating product:", error);
-    res.status(500).json({ message: "Error updating product", error: error.message });
-  }
-});
-
-app.put("/api/manage-edit-product", async (req, res) => {
-  const { id, name, size, price } = req.body;
-
-  if (!id || (!name && !size && !price)) {
-    return res.status(400).json({ message: "Product ID and at least one field to update are required" });
-  }
-
-  try {
-    await db.query("START TRANSACTION");
-
-    let updateFields = [];
-    let updateValues = [];
-
-    if (name) {
-      updateFields.push("product_name = ?");
-      updateValues.push(name);
-    }
-    if (size) {
-      updateFields.push("size = ?");
-      updateValues.push(size);
-    }
-    if (price !== undefined) {
-      updateFields.push("price = ?");
-      updateValues.push(price);
-    }
-
-    if (updateFields.length === 0) {
-      await db.query("ROLLBACK");
-      return res.status(400).json({ message: "No valid fields provided for update" });
-    }
-
-    updateValues.push(id);
-
-    const [updateResult] = await db.query(
-      "UPDATE Product_details SET ${updateFields.join(", ")} WHERE product_id = ?",
       updateValues
     );
 
@@ -1167,12 +1052,12 @@ app.post("/api/add-stall-inventory", async (req, res) => {
 });
 
 app.post("/api/inventory-add-production-inventory", async (req, res) => {
-  const { product_name, size, quantity } = req.body;
+  const { product_name, size, quantity, batch } = req.body; // Assuming batch number is provided
   const now = new Date().toISOString();
 
   console.log("Received request body:", req.body);
 
-  if (!product_name || !size || !quantity) {
+  if (!product_name || !size || !quantity || !batch) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -1187,41 +1072,43 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
 
     let productDId;
 
-    // First time input check
-
     if (productDetailsResult.length > 0) {
       productDId = productDetailsResult[0].product_id;
-
     } else {
       // Insert into Product_details
       const [addProductDetails] = await db.query(
         "INSERT INTO Product_details (product_name, size) VALUES (?, ?)",
         [product_name, size]
       );
-    
+
       productDId = addProductDetails.insertId;
       console.log(`Inserted new product details with ID: ${productDId}`);
     }
 
-
-    // Ensure `productId` is valid before proceeding
     if (!productDId) {
       return res.status(400).json({ message: "Failed to retrieve or insert product." });
     }
 
-    const [productExists] = await db.query(
-      "SELECT * FROM product WHERE product_name = ?",
-      [productDId]
-    );
+    // Ensure batch exists
+    let batchId;
+    const [batchExists] = await db.query("SELECT batch_id FROM batch WHERE batch_id = ?", [batch]);
+
+    if (batchExists.length > 0) {
+      batchId = batchExists[0].batch_id;
+    } 
+
+    // Insert product into `Product`
+    let productId;
+    const [productExists] = await db.query("SELECT product_id FROM product WHERE product_name = ?", [productDId]);
 
     if (productExists.length === 0) {
-      // Insert new row if the product doesn't exist in `product`
-      await db.query(
+      const [newProduct] = await db.query(
         "INSERT INTO product (product_name, quantity) VALUES (?, ?)",
         [productDId, quantity]
       );
+      productId = newProduct.insertId;
     } else {
-      // Update the quantity for an existing product entry
+      productId = productExists[0].product_id;
       await db.query(
         `UPDATE product 
          SET quantity = quantity + ? 
@@ -1230,9 +1117,22 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
       );
     }
 
-
-    // Insert into product table using `productId`
+    // Insert into `Batch_product` (linking batch_id and product_id)
+    await db.query(
+      "INSERT INTO batch_product (batch_id, product_id) VALUES (?, ?)",
+      [batchId, productId]
+    );
     await db.query("COMMIT");
+
+    await db.query("START TRANSACTION");
+    // Insert into `Inventory`
+    await db.query(
+      "INSERT INTO inventory (batch_id) VALUES (?)",
+      [batchId]
+    );
+
+    await db.query("COMMIT");
+    
     res.status(201).json({ message: "Production inventory added successfully" });
   } catch (error) {
     await db.query("ROLLBACK");
@@ -1240,6 +1140,7 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     res.status(500).json({ message: "Error adding production inventory", error: error.message });
   }
 });
+
 
 
 app.get("/api/inventory-view-production-inventory", async (req, res) => {
