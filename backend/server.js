@@ -101,7 +101,7 @@ app.post("/api/process-delivery", async (req, res) => {
     }
 
     // Ensure the inventory item exists
-    const [inventoryResult] = await db.query("SELECT inventory_id FROM inventory WHERE inventory_id = ?", [order_items]);
+    const [inventoryResult] = await db.query("SELECT inventory_id FROM inventory WHERE inventory_id = ?", [product]);
     if (inventoryResult.length === 0) {
       throw new Error("Inventory item does not exist");
     }
@@ -110,7 +110,7 @@ app.post("/api/process-delivery", async (req, res) => {
     const [addOrderDetails] = await db.query(
       `INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)`,
 
-      [order_items, quantity, subtotal]
+      [product, quantity, subtotal]
     );
     orderDetailsId = addOrderDetails.insertId;
     console.log("New order details ID:", orderDetailsId);
