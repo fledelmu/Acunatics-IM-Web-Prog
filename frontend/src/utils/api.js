@@ -57,7 +57,7 @@ export const fetchRecords = async (type, data) =>{
 export const fetchType = async (type) => {
     try {
         const response = await axios.get(`${URL}/api/${type}`)
-        
+
         return response.data
     } catch (error) {
         console.error("Error fetching records:", error)
@@ -385,6 +385,17 @@ export const viewStallsInv = async () => {
         return response.data
     } catch(error){
         console.error("Error retrieving inventory: ", error)
+        return []
+    }
+}
+
+//Inventory Tab
+export const viewInventoryStalls = async () => {
+    try {
+        const response = await axios.get(`${URL}/api/inventory-view-supply-inventory`)
+        return response.data
+    } catch (error) {
+        console.error("Error fetching inventory: ", error)
         return []
     }
 }

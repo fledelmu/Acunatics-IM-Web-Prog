@@ -270,7 +270,7 @@ app.get("/api/client-delivery-records", async (req, res) => {
         d.delivery_id, 
         c.name AS client_name,  
         pd.product_name,
-        pd.product_size
+        pd.size,
         od.quantity,
         od.subtotal, 
         d.location,
@@ -348,7 +348,7 @@ app.get("/api/outlet-delivery-records", async (req, res) => {
         d.delivery_id, 
         b.location AS branch,  
         pd.product_name, 
-        pd.product_size, 
+        pd.size, 
         od.quantity,
         od.subtotal, 
         DATE(d.date) AS date
@@ -1204,16 +1204,16 @@ app.get("/api/inventory-view-supply-inventory", async (req, res) => {
   try {
     const [supplyRecords] = await db.query( `
       SELECT 
-        s.supply_id,  
-        it.item_name,
-        SUM(sd.quantity) AS total
-        sd.unit, 
-      FROM supply s
-      JOIN supplier sp ON s.supplier_id = sp.supplier_id
-      JOIN supply_details sd ON s.supply_id = sd.supply_id
-      JOIN item i ON sd.item_id = i.item_id
-      JOIN item_type it ON i.item_type = it.item_type_id
-    `);
+    s.supply_id,  
+    it.item_name,
+    SUM(sd.quantity) AS total
+    FROM supply s
+    JOIN supplier sp ON s.supplier_id = sp.supplier_id
+    JOIN supply_details sd ON s.supply_id = sd.supply_id
+    JOIN item i ON sd.item_id = i.item_id
+    JOIN item_type it ON i.item_type = it.item_type_id
+    GROUP BY it.item_name;`
+  );
     res.json(supplyRecords);
   } catch (err) {
     res.status(500).json({ error: err.message });
