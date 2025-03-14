@@ -895,10 +895,12 @@ app.post("/api/manage-add-client", async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal server error" })
   }
 })
-app.put("/api/manage-edit-client", async (req, res) => {
-  const { id, name, contact } = req.body;
 
-  if (!id || (!name && !contact)) {
+app.put("/api/manage-edit-client", async (req, res) => {
+  console.log("Received Data:", req.body);
+  const { client_id, name, contact } = req.body;
+
+  if (!client_id || (!name && !contact)) {
     return res.status(400).json({ message: "Client ID and at least one field to update are required" });
   }
 
@@ -922,12 +924,13 @@ app.put("/api/manage-edit-client", async (req, res) => {
       return res.status(400).json({ message: "No valid fields provided for update" });
     }
 
-    updateValues.push(id);
+    updateValues.push(client_id);
 
-    const [updateResult] = await db.query(
-      "UPDATE client SET ${updateFields.join(", ")} WHERE client_id = ?",
-      updateValues
-    );
+    // Corrected query construction
+    const updateQuery = `UPDATE client SET ${updateFields.join(", ")} WHERE client_id = ?`;
+    console.log("Executing Query:", updateQuery, updateValues);
+
+    const [updateResult] = await db.query(updateQuery, updateValues);
 
     if (updateResult.affectedRows === 0) {
       await db.query("ROLLBACK");
@@ -942,6 +945,7 @@ app.put("/api/manage-edit-client", async (req, res) => {
     res.status(500).json({ message: "Error updating client", error: error.message });
   }
 });
+
 
 //Inventory - Stalls Inventory
 app.get("/api/inventory-stalls-inventory-search", async (req, res) => {

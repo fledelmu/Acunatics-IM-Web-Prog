@@ -192,14 +192,24 @@ export const addClient = async (data) => {
     }
 }
 
-export const editClient = async (data) => {
-    try{
-        const response = await axios.put("/api/manage-edit-client", data)
+export const editClient = async (editData) => {
+    try {
+        console.log("Sending data to backend:", editData); 
+        const response = await axios.put(`${URL}/api/manage-edit-client`, editData, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
 
-        return response.data
+        if (response.status !== 200) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        console.log("Response from backend:", response.data); // Log the response from the backend
+        return response.data;
     } catch (error) {
-        console.error("Error editing client!", error)
-        return []
+        console.error("Error editing client:", error);
+        return null;
     }
 }
 
