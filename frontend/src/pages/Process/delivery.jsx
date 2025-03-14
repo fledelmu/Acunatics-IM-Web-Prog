@@ -3,6 +3,8 @@
     import {useState} from 'react'
     import Select from 'react-select'
     import { processDelivery, fetchRecords} from '../../utils/api'
+
+    
     export default function Delivery(){
         const options = [
             { value: "Material", label: "Material" }
@@ -144,29 +146,6 @@
                         </>
                     )}
                 </div>
-                {isEditing && (
-                <div className="modal">
-                    <div className="modal-content">
-                        <h3>Edit Outlet</h3>
-                        {columns.map((col, index) => (
-                            <div key={index}>   
-                                <label>{col}</label>
-                                {col === columns[0] ? (
-                                    <div>{editData[col]}</div> 
-                                ) : (
-                                    <input 
-                                        value={editData[col] || ""} 
-                                        onChange={(e) => setEditData({ ...editData, [col]: e.target.value })}
-                                        disabled={col === columns[0]}
-                                    />
-                                )}
-                            </div>
-                        ))}
-                        <button onClick={handleSave} className="input-button">Save</button>
-                        <button onClick={() => setIsEditing(false)} className="input-button">Cancel</button>
-                    </div>
-                </div>
-            )}
             </div>
         )
     }
