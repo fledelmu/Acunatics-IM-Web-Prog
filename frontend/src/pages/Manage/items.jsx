@@ -2,7 +2,7 @@ import '../../App.css'
 import './manage.css'
 import {useState, useEffect} from 'react'
 import Select from 'react-select'
-import { addItem, getItems, searchItem} from '../../utils/api'
+import { addItem, getItems, searchItem, editItem} from '../../utils/api'
 
 
 export default function Items(){
@@ -52,68 +52,73 @@ export default function Items(){
 
 
     const handleEdit = (record) => {
-        setEditData(record) 
-        setIsEditing(true) 
+        setEditData({
+            item_type_id: record.item_type_id, 
+            item_name: record.item_name, 
+            item_type: record.item_type,  
+            unit: record.unit,  
+            price: record.price
+        })
+        setIsEditing(true)
     }
     
     const handleSave = async () => {
-        try {
-            //const updatedRecord = await updateOutlet(editData) 
-            setRecords(records.map(r => r.id === updatedRecord.id ? updatedRecord : r)) 
-            setIsEditing(false) 
+        try {   
+            await editItem(editData)  // Ensure this function is correctly updating the data
+            const updatedItems = await getItems()
+            
+            setRecords(updatedItems.length > 0 ? updatedItems : [])
+            setColumns(updatedItems.length > 0 ? Object.keys(updatedItems[0]) : [])
+            setIsEditing(false)
         } catch (error) {
             console.error("Error updating record:", error)
-            alert("Failed to update record")
+            alert("An error occurred while updating the record.")
         }
     }
-
+    
     const handleButton = async () => {
         const data = { 
-            name: name, 
-            type: type?.value,  
+            item_name, 
+            item_type: type?.value,  
             unit: unit?.value,  
-            price: price
+            price
         }
-
-         console.log("clicked")
+    
         try {
-
-            if(!type || !name || !unit || !price){
-                console.error("Enter all fields")
+            if (!type || !name || !unit || !price) {
+                alert("Enter all fields")
                 return
             }
+    
             if (selectedAction?.value === "Add") {
                 const addResponse = await addItem(data)
-    
+                if (!addResponse.success) {
+                    alert(addResponse.message)
+                    return
+                }
                 setName('')
                 setPrice('')
-
-                    
-                const updatedItems = await getItems()
+                setType(null) // Reset select
+                setSelectedUnit(units[0]) // Reset to default unit
     
-                setRecords(updatedItems)
-                setColumns(Object.keys(updatedItems[0]))
+                const updatedItems = await getItems()
+                setRecords(updatedItems.length > 0 ? updatedItems : [])
+                setColumns(updatedItems.length > 0 ? Object.keys(updatedItems[0]) : [])
             }
     
             if (selectedAction?.value === "Search") {
-                console.log("Searching Item...", data)
                 const result = await searchItem(data)
-                console.log("Search Results:", result)
-    
                 setName('')
-                if (result.length > 0) {
-                    setRecords(result)
-                    setColumns(Object.keys(result[0]))
-                } else {
-                    setRecords([])
-                    setColumns([])
-                }
+    
+                setRecords(result.length > 0 ? result : [])
+                setColumns(result.length > 0 ? Object.keys(result[0]) : [])
             }
         } catch (error) {
             console.error("Error executing action:", error)
             alert("An error occurred while fulfilling the request.")
         }
     }
+    
     return(
         <div className='content'>
             <div><h2>Items</h2></div>
