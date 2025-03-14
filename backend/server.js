@@ -363,12 +363,12 @@ app.post("/api/manage-add-suppliers", async(req, res) => {
   }
 })
 
-app.put("/api/manage-edit-suppliers", async(req, res) => {
+app.put("/api/manage-edit-suppliers", async (req, res) => {
+  console.log("Received Data:", req.body);
+  const { supplier_id, name, contact, address } = req.body;
 
-  const { id, name, contact, address} = req.body
-
-  if (!id || !name && !contact && !address) {
-    return res.status(400).json({ message: "Product ID and at least one field to update are required" });
+  if (!supplier_id || (!name && !contact && !address)) {
+    return res.status(400).json({ message: "Supplier ID and at least one field to update are required" });
   }
 
   try {
@@ -377,13 +377,17 @@ app.put("/api/manage-edit-suppliers", async(req, res) => {
     let updateFields = [];
     let updateValues = [];
 
-    if (size) {
+    if (name) {
       updateFields.push("name = ?");
       updateValues.push(name);
     }
-    if (quantity !== undefined) {
+    if (contact) {
       updateFields.push("contact = ?");
       updateValues.push(contact);
+    }
+    if (address) {
+      updateFields.push("address = ?");
+      updateValues.push(address);
     }
 
     if (updateFields.length === 0) {
@@ -391,13 +395,15 @@ app.put("/api/manage-edit-suppliers", async(req, res) => {
       return res.status(400).json({ message: "No valid fields provided for update" });
     }
 
-    updateValues.push(id);
+    updateValues.push(supplier_id); // ID should always be the last value
 
+    const updateQuery = `
+      UPDATE supplier 
+      SET ${updateFields.join(", ")} 
+      WHERE supplier_id = ?
+    `;
 
-    const [updateResult] = await db.query(
-      `UPDATE supplier SET ${updateFields.join(", ")} WHERE supplier_id = ?`,
-      updateValues
-    );
+    const [updateResult] = await db.query(updateQuery, updateValues);
 
     if (updateResult.affectedRows === 0) {
       await db.query("ROLLBACK");
@@ -409,10 +415,12 @@ app.put("/api/manage-edit-suppliers", async(req, res) => {
 
   } catch (error) {
     await db.query("ROLLBACK");
-    console.error("Error updating product:", error);
-    res.status(500).json({ message: "Error updating product", error: error.message });
+    console.error("Error updating supplier:", error);
+    res.status(500).json({ message: "Error updating supplier", error: error.message });
   }
-})
+});
+
+
 
 //Manage - Outlets
 app.post("/api/manage-add-outlet", async (req, res) => {
@@ -804,7 +812,7 @@ app.put("/api/manage-edit-client", async (req, res) => {
 });
 
 //Inventory - Stalls Inventory
-app.get("/api/inventory-stalls-inventory", async (req, res) => {
+app.get("/api/inventory-stalls-inventory-search", async (req, res) => {
   const { location } = req.query;
 
   // Log the received location parameter
@@ -884,7 +892,6 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
     if (!productDId) {
       return res.status(400).json({ message: "Failed to retrieve or insert product." });
     }
-
 
     const [addProduct] = await db.query("INSERT INTO product (product_name, quantity) VALUES (?,?)", [productDId, quantity])
 
