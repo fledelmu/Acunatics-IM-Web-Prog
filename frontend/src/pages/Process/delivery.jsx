@@ -145,7 +145,7 @@ export default function Delivery() {
                 <Select
                     className="selection"
                     options={sizes}
-                    value={selectedSize}
+                    value={setSelectedSize}
                     onChange={setSelectedType}
                     isClearable
                     placeholder="Select Type..."

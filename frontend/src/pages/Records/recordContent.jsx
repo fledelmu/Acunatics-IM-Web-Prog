@@ -6,12 +6,14 @@ import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import {fetchRecords} from '../../utils/api'
 import dayjs from 'dayjs'
+import Delivery from '../Process/delivery'
 
 
 export default function RecordsProduction(){
     const type = [
         { value: "Production", label: "Production" },
-        { value: "Delivery", label: "Delivery" },
+        { value: "DeliveryOutlet", label: "Delivery - Outlet" },
+        { value: "DeliveryClient", label: "Delivery - Client" },
         { value: "Supply", label: "Supply" }
     ]
 
@@ -32,9 +34,11 @@ export default function RecordsProduction(){
             const data = { date: formattedDate };
 
             console.log("Formatted Date Sent:", formattedDate);
+
             const endPoints = {
                 Production: 'production-records',
-                Delivery: 'delivery-records',
+                DeliveryClient: 'client-delivery-records',
+                DeliveryOutlet: 'outlet-delivery-records',
                 Supply: 'supply-records',
             };
 
