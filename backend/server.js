@@ -112,8 +112,9 @@ app.post("/api/process-delivery", async (req, res) => {
     // Create order details
     const subtotal = quantity * price;
     const [addOrderDetails] = await db.query(
-      "INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)",
-      [inventoryId, quantity, subtotal]
+      `INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)`,
+
+      [order_items, quantity, subtotal]
     );
     orderDetailsId = addOrderDetails.insertId;
 
@@ -230,6 +231,7 @@ app.post("/api/process-supply", async (req, res) => {
 
 // Records Tab
 app.get("/api/production-records", async (req, res) => {
+  const { date } = req.query
 
   try {
     const [productionRecords] = await db.query(` 
@@ -263,11 +265,11 @@ app.get("/api/delivery-records", async (req, res) => {
     const [deliveryRecords] = await db.query(`
       SELECT 
         d.delivery_id, 
-        c.name AS client_name, 
-        d.location, 
-        d.date, 
-        od.quantity, 
-        od.subtotal
+        c.name AS client_name,  
+        od.quantity,
+        od.subtotal, 
+        d.location,
+        d.date
       FROM delivery d
       JOIN client c ON d.delivery_id = c.client_id
       JOIN order_details od ON d.delivery_id = od.order_id
@@ -291,13 +293,17 @@ app.get("/api/supply-records", async (req, res) => {
       SELECT 
         s.supply_id, 
         sp.name AS supplier_name, 
-        s.date, 
-        sd.unit, 
+        it.item_name,
         sd.quantity, 
-        sd.price
+        sd.unit, 
+        sd.price, 
+        (sd.price * sd.quantity) AS subtotal,
+        s.date
       FROM supply s
       JOIN supplier sp ON s.supplier_id = sp.supplier_id
       JOIN supply_details sd ON s.supply_id = sd.supply_id
+      JOIN item i ON sd.item_id = i.item_id
+      join item_type it ON i.item_type = it.item_type_id
       ORDER BY s.date ${sortOrder}
     `);
     res.json(supplyRecords);
@@ -546,9 +552,9 @@ app.get("/api/manage-search-product", async(req, res) => {
   }
 })
 app.put("/api/manage-edit-product", async (req, res) => {
-  const { id, name, size, price } = req.body;
-
-  if (!id || (!name && !size && !price)) {
+  const { product_id, product_name, size, price } = req.body;
+  console.log("received data:", req.body);
+  if (!product_id || (!product_name && !size && !price)) {
     return res.status(400).json({ message: "Product ID and at least one field to update are required" });
   }
 
@@ -558,9 +564,9 @@ app.put("/api/manage-edit-product", async (req, res) => {
     let updateFields = [];
     let updateValues = [];
 
-    if (name) {
+    if (product_name) {
       updateFields.push("product_name = ?");
-      updateValues.push(name);
+      updateValues.push(product_name);
     }
     if (size) {
       updateFields.push("size = ?");
@@ -576,7 +582,7 @@ app.put("/api/manage-edit-product", async (req, res) => {
       return res.status(400).json({ message: "No valid fields provided for update" });
     }
 
-    updateValues.push(id);
+    updateValues.push(product_id);
 
     const [updateResult] = await db.query(
       `UPDATE Product_details SET ${updateFields.join(", ")} WHERE product_id = ?`,
@@ -654,10 +660,11 @@ app.get("/api/manage-search-item", async(req, res) => {
     res.status(500).json({data: []})
   }
 })
-app.put("/api/manage-edit-item", async (req, res) => {
-  const { id, name, type, unit, price } = req.body;
 
-  if (!id || (!name && !type && !unit && !price)) {
+app.put("/api/manage-edit-item", async (req, res) => {
+  const { item_type_id, item_name, item_type, unit, price } = req.body;
+
+  if (!item_type_id || (!item_name && !item_type && !unit && !price)) {
     return res.status(400).json({ message: "Item ID and at least one field to update are required" });
   }
 
@@ -667,13 +674,13 @@ app.put("/api/manage-edit-item", async (req, res) => {
     let updateFields = [];
     let updateValues = [];
 
-    if (name) {
+    if (item_name) {
       updateFields.push("item_name = ?");
-      updateValues.push(name);
+      updateValues.push(item_name);
     }
-    if (type) {
+    if (item_type) {
       updateFields.push("item_type = ?");
-      updateValues.push(type);
+      updateValues.push(item_type);
     }
     if (unit) {
       updateFields.push("unit = ?");
@@ -689,10 +696,10 @@ app.put("/api/manage-edit-item", async (req, res) => {
       return res.status(400).json({ message: "No valid fields provided for update" });
     }
 
-    updateValues.push(id);
+    updateValues.push(item_type_id);
 
     const [updateResult] = await db.query(
-      `UPDATE item_type SET ${updateFields.join(", ")} WHERE item_id = ?`,
+      `UPDATE item_type SET ${updateFields.join(", ")} WHERE item_type_id = ?`,
       updateValues
     );
 
@@ -920,7 +927,73 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
   }
 });
 
+app.post("/api/inventory-add-production-inventory", async (req, res) => {
+  const { product_name, size, quantity } = req.body;
+  const now = new Date().toISOString();
 
+  console.log("Received request body:", req.body);
+
+  if (!product_name || !size || !quantity) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    // Check if product details exist
+    const [productDetailsResult] = await db.query(
+      "SELECT product_id FROM Product_details WHERE product_name = ? AND size = ?",
+      [product_name, size]
+    );
+
+    let productDId;
+
+    if (productDetailsResult.length > 0) {
+      productDId = productDetailsResult[0].product_id;
+    } else {
+      // Insert into Product_details
+      const [addProductDetails] = await db.query(
+        "INSERT INTO Product_details (product_name, size) VALUES (?, ?)",
+        [product_name, size]
+      );
+      productDId = addProductDetails.insertId;
+      console.log(`Inserted new product details with ID: ${productId}`);
+    }
+
+
+    // Ensure `productId` is valid before proceeding
+    if (!productDId) {
+      return res.status(400).json({ message: "Failed to retrieve or insert product." });
+    }
+
+
+    const [addProduct] = await db.query("INSERT INTO product (product_name, quantity) VALUES (?,?)", [productDId, quantity])
+
+  
+    // Insert into inventory
+    const [addInventory] = await db.query(
+      `INSERT INTO inventory (product, date) VALUES (?, ?)`,
+      [productDId, now]
+    );
+    
+    console.log(`Inserted into inventory with ID: ${addInventory.insertId}`);
+
+    // Insert into product table using `productId`
+    await db.query(
+      `INSERT INTO product (product_name, quantity) VALUES (?, ?) 
+       ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)`,
+      [productDId, quantity]
+    );
+    console.log(`Inserted/Updated product table with ID: ${productDId}`);
+
+    await db.query("COMMIT");
+    res.status(201).json({ message: "Production inventory added successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error adding production inventory:", error);
+    res.status(500).json({ message: "Error adding production inventory", error: error.message });
+  }
+});
 
 
 app.get("/api/inventory-view-production-inventory", async (req, res) =>{
