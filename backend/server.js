@@ -283,6 +283,12 @@ app.post("/api/process-supply", async (req, res) => {
   }
 });
 
+//Process - Sales
+
+
+
+
+
 // Records Tab
 app.get("/api/production-records", async (req, res) => {
   const { date } = req.query
