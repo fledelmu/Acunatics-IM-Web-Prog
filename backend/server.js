@@ -143,20 +143,24 @@ app.post("/api/process-delivery", async (req, res) => {
         "INSERT INTO delivery (order_id, date) VALUES (?, ?)",
         [orderId, now]
       );
-
       // Update branch inventory
       const [stockResult] = await db.query(
         "SELECT quantity FROM branch_inventory WHERE inventory_id = ? AND branch_id = ?",
         [inventoryId, branchId]
       );
 
-      if (!stockResult.length) throw new Error("Branch inventory record not found.");
-      if (stockResult[0].quantity < quantity) throw new Error("Not enough stock in branch inventory.");
-
-      await db.query(
-        "UPDATE branch_inventory SET quantity = ? WHERE inventory_id = ? AND branch_id = ?",
-        [stockResult[0].quantity - quantity, inventoryId, branchId]
-      );
+      if (!stockResult.length){
+        await db.query(
+          "INSERT INTO branch_inventory (inventory_id, branch_id, quantity) VALUES (?, ?, ?)",
+          [inventoryId, branchId, quantity]
+        );
+      } else {
+        await db.query(
+          "UPDATE branch_inventory SET quantity = ? WHERE inventory_id = ? AND branch_id = ?",
+          [stockResult[0].quantity - quantity, inventoryId, branchId]
+        );
+      }
+      
     }
 
     await db.query("COMMIT");
@@ -287,22 +291,22 @@ app.get("/api/client-delivery-records", async (req, res) => {
   try {
     let query = `
       SELECT 
-    d.delivery_id, 
-    c.name AS client_name,  
-    pd.product_name,
-    pd.size,
-    od.quantity,
-    od.subtotal, 
-    d.location,
-    DATE(d.date) AS date
-    FROM delivery d
-    JOIN client c ON d.client_id = c.client_id
-    JOIN orders o ON d.order_id = o.order_id
-    JOIN order_details od ON o.order_details = od.order_details_id
-    JOIN inventory i ON od.inventory_id = i.inventory_id
-    JOIN batch_product bp ON i.batch_id = bp.batch_id
-    JOIN product p ON bp.product_id = p.product_id
-    JOIN Product_details pd ON p.product_id = pd.product_id 
+      d.delivery_id, 
+      c.name,  
+      pd.product_name,
+      pd.size,
+      od.quantity,
+      od.subtotal, 
+      d.location,
+      DATE(d.date) AS date
+      FROM delivery d
+      JOIN client c ON d.client_id = c.client_id
+      JOIN orders o ON d.order_id = o.order_id
+      JOIN order_details od ON o.order_details = od.order_details_id
+      JOIN inventory i ON od.inventory_id = i.inventory_id
+      JOIN batch_product bp ON i.batch_id = bp.batch_id
+      JOIN product p ON bp.product_id = p.product_id
+      JOIN Product_details pd ON p.product_name = pd.product_id 
     `;
 
     const filterDate = [];
@@ -367,7 +371,7 @@ app.get("/api/outlet-delivery-records", async (req, res) => {
       let query = `
           SELECT 
               d.delivery_id, 
-              c.name AS branch,  
+              b.location,  
               pd.product_name, 
               pd.size, 
               od.quantity,
@@ -377,10 +381,11 @@ app.get("/api/outlet-delivery-records", async (req, res) => {
           JOIN orders o ON d.order_id = o.order_id
           JOIN order_details od ON o.order_details = od.order_details_id
           JOIN inventory i ON od.inventory_id = i.inventory_id
-          JOIN batch_product bp ON i.batch_id = bp.batch_id
+          JOIN batch_product bp ON i.batch_id = bp.inventory_id
           JOIN product p ON bp.product_id = p.product_id  
-          JOIN Product_details pd ON p.product_id = pd.product_id
-          JOIN client c ON d.client_id = c.client_id  
+          JOIN Product_details pd ON p.product_name = pd.product_id
+          JOIN branch_inventory bi ON o.order_id = bi.inventory_id
+          JOIN branch b ON b.branch_id = bi.branch_id
       `;
 
       const filterDate = [];
@@ -404,7 +409,6 @@ app.listen(PORT, () => {
 });
 
 //Manage - Suppliers
-
 app.get("/api/manage-get-suppliers", async (req,res) => {
   try{
     const [getSuppliers] = await db.query("SELECT * FROM supplier")
@@ -907,82 +911,6 @@ app.put("/api/manage-edit-client", async (req, res) => {
 });
 
 
-//Inventory - Stalls Inventory
-app.get("/api/inventory-stalls-inventory-search", async (req, res) => {
-  const { location } = req.query;
-  console.log("Received location:", location);
-
-  try {
-    // Query to find branch ID based on location
-    const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [location]);
-    if (branchResult.length === 0) {
-      return res.status(404).json({ message: "Branch not found" });
-    }
-
-    const branchId = branchResult[0].branch_id;
-
-    // Query to fetch inventory data for the found branch ID
-    const [inventoryResult] = await db.query(`
-      SELECT 
-        bi.inventory_id, 
-        bi.order_id, 
-        bi.date, 
-        bp.product_id, 
-        bp.quantity, 
-        bp.price 
-      FROM branch_inventory bi
-      JOIN branch_product bp ON bi.inventory_id = bp.inventory_id
-      WHERE bi.branch_id = ?
-    `, [branchId]);
-
-    // Respond with the inventory data
-    res.json(inventoryResult);
-  } catch (error) {
-    console.error("Error fetching stalls inventory:", error);
-    res.status(500).json({ message: "Error fetching stalls inventory", error: error.message });
-  }
-});
-
-app.get("/api/inventory-stalls-inventory", async (req, res) => {
-  const { location } = req.query;
-
-  // Log the received location parameter
-  console.log("Received location:", location);
-
-  // Check if location is provided
-  if (!location) {
-    return res.status(400).json({ message: "Location is required" });
-  }
-
-  try {
-    // Query to find branch ID based on location
-    const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [location]);
-    if (branchResult.length === 0) {
-      return res.status(404).json({ message: "Branch not found" });
-    }
-
-    const branchId = branchResult[0].branch_id;
-
-    // Query to fetch inventory data for the found branch ID
-    const [inventoryResult] = await db.query(`
-      SELECT 
-        bi.inventory_id, 
-        bi.order_id, 
-        bi.date, 
-        bp.product_id, 
-        bp.quantity, 
-        bp.price 
-      FROM branch_inventory bi
-      JOIN branch_product bp ON bi.inventory_id = bp.inventory_id
-    `);
-
-    // Respond with the inventory data
-    res.json(inventoryResult);
-  } catch (error) {
-    console.error("Error fetching stalls inventory:", error);
-    res.status(500).json({ message: "Error fetching stalls inventory", error: error.message });
-  }
-});
 
 //Inventory - Stalls Inventory
 app.post("/api/add-stall-inventory", async (req, res) => {
@@ -1183,3 +1111,33 @@ app.get("/api/inventory-view-supply-inventory", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 })
+
+
+app.get("/api/inventory-stalls-inventory-search", async (req, res) => {
+  const { location} = req.query;
+
+ 
+
+  try {
+    // Query to fetch product details based on location, product_name, and size
+    const [productDetails] = await db.query(
+      `SELECT 
+         b.location AS Location,
+         pd.product_name AS ProductName,
+         pd.size AS ProductSize,
+         bi.quantity AS Quantity
+       FROM Product_details pd
+       JOIN product p ON pd.product_id = p.product_name
+       JOIN branch_product bp ON pd.product_id = bp.product_id
+       JOIN branch_inventory bi ON bp.inventory_id = bi.inventory_id
+       JOIN branch b ON bi.branch_id = b.branch_id
+       WHERE b.location = ?`,
+      [location]
+    ); 
+
+    res.json(productDetails);
+  } catch (error) {
+    console.error("Error searching stalls inventory:", error);
+    res.status(500).json({ message: "Error searching stalls inventory", error: error.message });
+  }
+});

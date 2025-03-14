@@ -373,9 +373,9 @@ export const viewInventory = async () => {
     }
 }
 
-export const viewStallsInv = async () => {
+export const viewStallsInv = async (data) => {
     try{
-        const response = await axios.get(`${URL}/api/inventory-stalls-inventory`)
+        const response = await axios.get(`${URL}/api/inventory-view-outlet-inventory`)
         console.log("Inventory response: ", response.data)
         return response.data
     } catch(error){
