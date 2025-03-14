@@ -54,7 +54,8 @@ export default function Delivery() {
             location: selectedType.value === "Client" ? location : "", 
             product: product,
             quantity: quantity,
-            price: price
+            price: price,
+            size: selectedSize?.value || "N/A"
         };
 
         try {
