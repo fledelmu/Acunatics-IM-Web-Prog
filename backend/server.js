@@ -120,12 +120,12 @@ app.post("/api/process-delivery", async (req, res) => {
 
     // Fetch latest inventory entry for this product and size
     const [inventoryResult] = await db.query(
-      `SELECT i.inventory_id, i.quantity 
+      `SELECT i.inventory_id, p.quantity 
        FROM inventory i
-       JOIN Product_details pd ON i.product = pd.product_id
+       JOIN product p ON i.product = p.product_id
+       JOIN Product_details pd ON p.product_id = pd.product_id
        WHERE pd.product_name = ? AND pd.size = ? 
-       ORDER BY i.date DESC 
-       LIMIT 1`,
+       ORDER BY p.quantity DESC`,
       [product, size]
     );
 
@@ -1202,6 +1202,7 @@ app.post("/api/inventory-add-production-inventory", async (req, res) => {
 
     // Ensure `productId` is valid before proceeding
     if (!productDId) {
+      
       return res.status(400).json({ message: "Failed to retrieve or insert product." });
     }
 
