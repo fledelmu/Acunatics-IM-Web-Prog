@@ -46,7 +46,7 @@ export default function Delivery() {
     }, []);
 
     const addDelivery = async () => {
-        if (!selectedType || !target || !product || !quantity || !price) {
+        if (!selectedType.value || !target || !product || !quantity || !price) {
             alert("Please fill in all fields");
             return;
         }
@@ -66,7 +66,13 @@ export default function Delivery() {
             
             // Refresh delivery records
             let table = await fetchRecords('client-delivery-records');
-            if (selectedType.value === "Outlet") {
+
+
+            if (selectedType?.value === "Client") {
+                table = await fetchRecords('client-delivery-records');
+            }
+            
+            if (selectedType?.value === "Outlet") {
                 table = await fetchRecords('outlet-delivery-records');
             }
             setColumns(table.length > 0 ? Object.keys(table[0]) : []);
