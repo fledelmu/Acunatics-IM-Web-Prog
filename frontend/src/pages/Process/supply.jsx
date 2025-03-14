@@ -19,6 +19,7 @@ export default function Supply() {
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
 
+
     useEffect(() => {
         async function loadSupply() {
             try {
@@ -33,6 +34,8 @@ export default function Supply() {
         }
         loadSupply();
     }, []);
+
+
 
     const addSupply = async () => {
         console.log('clicked')
