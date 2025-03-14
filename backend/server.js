@@ -227,7 +227,8 @@ app.post("/api/process-supply", async (req, res) => {
 
 // Records Tab
 app.get("/api/production-records", async (req, res) => {
-
+  const { date } = req.query
+  
   try {
     const [productionRecords] = await db.query(` 
       SELECT 
@@ -260,11 +261,11 @@ app.get("/api/delivery-records", async (req, res) => {
     const [deliveryRecords] = await db.query(`
       SELECT 
         d.delivery_id, 
-        c.name AS client_name, 
-        d.location, 
-        d.date, 
-        od.quantity, 
-        od.subtotal
+        c.name AS client_name,  
+        od.quantity,
+        od.subtotal, 
+        d.location,
+        d.date
       FROM delivery d
       JOIN client c ON d.delivery_id = c.client_id
       JOIN order_details od ON d.delivery_id = od.order_id
@@ -288,13 +289,17 @@ app.get("/api/supply-records", async (req, res) => {
       SELECT 
         s.supply_id, 
         sp.name AS supplier_name, 
-        s.date, 
-        sd.unit, 
+        it.item_name,
         sd.quantity, 
-        sd.price
+        sd.unit, 
+        sd.price, 
+        (sd.price * sd.quantity) AS subtotal,
+        s.date
       FROM supply s
       JOIN supplier sp ON s.supplier_id = sp.supplier_id
       JOIN supply_details sd ON s.supply_id = sd.supply_id
+      JOIN item i ON sd.item_id = i.item_id
+      join item_type it ON i.item_type = it.item_type_id
       ORDER BY s.date ${sortOrder}
     `);
     res.json(supplyRecords);
