@@ -39,9 +39,11 @@ export const processSupply = async (data) => {
 }
 
 // Records Tabs
-export const fetchRecords = async (type) =>{
+export const fetchRecords = async (type, data) =>{
     try{
-        const response = await axios.get(`${URL}/api/${type}`)
+        const response = await axios.get(`${URL}/api/${type}`, {
+            params: data
+        })
         console.log("Response received:", response);
 
         return response.data

@@ -5,6 +5,7 @@ import {useState} from 'react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import {fetchRecords} from '../../utils/api'
+import dayjs from 'dayjs'
 
 
 export default function RecordsProduction(){
@@ -21,41 +22,48 @@ export default function RecordsProduction(){
     const [columns, setColumns] = useState([])
 
     const fetchInfo = async () => {
-    console.log("clicked");
+        console.log("clicked");
 
-    try {
-        const endPoints = {
-            Production: 'production-records',
-            Delivery: 'delivery-records',
-            Supply: 'supply-records',
-        };
+        try {
 
-        if (!selectedType) {
-            console.error("No type selected");
-            return;
-        }
+            
+            const formattedDate = selectedDate ? dayjs(selectedDate).format('YYYY-MM-DD') : null;
+            console.log("Formatted Date Sent:", formattedDate);
+            const data = { date: formattedDate };
 
-        console.log("Fetching records for:", selectedType.value);
+            console.log("Formatted Date Sent:", formattedDate);
+            const endPoints = {
+                Production: 'production-records',
+                Delivery: 'delivery-records',
+                Supply: 'supply-records',
+            };
 
-        const data = await fetchRecords(endPoints[selectedType.value]);
-        console.log("Fetched Data:", data);
+            if (!selectedType) {
+                console.error("No type selected");
+                return;
+            }
 
-        if (!data || data.length === 0) {
+            console.log("Fetching records for:", selectedType.value);
+
+            const response = await fetchRecords(endPoints[selectedType.value], data);
+            console.log("Fetched Data:", data);
+
+            if (!response || response.length === 0) {
+                setColumns([]);
+                setRecords([]);
+                console.warn("No records found");
+                return;
+            }
+
+            console.log("Setting columns:", Object.keys(response[0]));
+            setColumns(Object.keys(response[0]));
+            setRecords(response);
+        } catch (error) {
+            console.error("Fetching error:", error);
             setColumns([]);
             setRecords([]);
-            console.warn("No records found");
-            return;
         }
-
-        console.log("Setting columns:", Object.keys(data[0]));
-        setColumns(Object.keys(data[0]));
-        setRecords(data);
-    } catch (error) {
-        console.error("Fetching error:", error);
-        setColumns([]);
-        setRecords([]);
-    }
-};
+    };
 
     return(
         <div className="content">
