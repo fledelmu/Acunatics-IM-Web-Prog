@@ -10,10 +10,17 @@ export default function Delivery() {
         { value: "Client", label: "Client" }
     ];
 
+    const sizes = [
+        { value: "S", label: "S" },
+        { value: "M", label: "M" },
+        { value: "L", label: "L" }
+    ]
+
     const [selectedType, setSelectedType] = useState(null);
     const [records, setRecords] = useState([]);
     const [columns, setColumns] = useState([]);
 
+    const [selectedSize, setSelectedSize] = useState(null);
     const [target, setTarget] = useState('');
     const [location, setLocation] = useState('');
     const [product, setProduct] = useState('');
@@ -132,6 +139,15 @@ export default function Delivery() {
                     onChange={(e) => setProduct(e.target.value)}
                     value={product}
                     placeholder="Enter product..."
+                />
+
+                <Select
+                    className="selection"
+                    options={sizes}
+                    value={selectedSize}
+                    onChange={setSelectedType}
+                    isClearable
+                    placeholder="Select Type..."
                 />
 
                 <input
