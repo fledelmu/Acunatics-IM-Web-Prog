@@ -10,10 +10,17 @@ export default function Delivery() {
         { value: "Client", label: "Client" }
     ];
 
+    const sizes = [
+        { value: "S", label: "S" },
+        { value: "M", label: "M" },
+        { value: "L", label: "L" }
+    ]
+
     const [selectedType, setSelectedType] = useState(null);
     const [records, setRecords] = useState([]);
     const [columns, setColumns] = useState([]);
 
+    const [selectedSize, setSelectedSize] = useState(null);
     const [target, setTarget] = useState('');
     const [location, setLocation] = useState('');
     const [product, setProduct] = useState('');
@@ -23,7 +30,7 @@ export default function Delivery() {
     useEffect(() => {
         async function loadDelivery() {
             try {
-                let table = await fetchRecords('delivery-records')
+                let table = await fetchRecords('client-delivery-records')
                 if (table.length > 0) {
                     setColumns(Object.keys(table[0]))
                     setRecords(table)
@@ -44,15 +51,27 @@ export default function Delivery() {
         const data = {
             type: selectedType.value,
             target: target,
-            location: selectedType.value === "Client" ? location : "", // Only send location for Clients
+            location: selectedType.value === "Client" ? location : "", 
             product: product,
             quantity: quantity,
-            price: price
+            price: price,
+            size: selectedSize?.value || "N/A"
         };
 
         try {
             await processDelivery(data);
-            let table = await fetchRecords('delivery-records');
+            let table = await fetchRecords('client-delivery-records');
+
+
+            if (selectedType === "Client") {
+                table = await fetchRecords('client-delivery-records');
+            }
+            
+            if (selectedType === "Outlet") {
+                table = await fetchRecords('outlet-delivery-records');
+            }
+
+
             setColumns(table.length > 0 ? Object.keys(table[0]) : []);
             setRecords(table);
 
@@ -68,6 +87,24 @@ export default function Delivery() {
         }
     };
 
+    const handleRefresh = async () => {
+        let table
+        try {
+            if (selectedType.value === "Client") {
+                table = await fetchRecords('client-delivery-records');
+            }
+            
+            if (selectedType.value === "Outlet") {
+                table = await fetchRecords('outlet-delivery-records');
+            }
+
+            setColumns(table.length > 0 ? Object.keys(table[0]) : []);
+            setRecords(table);
+        } catch (error) {
+            console.error("Error in handleRefresh:", error);
+            alert("An error occurred while refreshing records.");
+        }
+    }
     return (
         <div className="content">
             <h2>Delivery Report</h2>
@@ -83,7 +120,7 @@ export default function Delivery() {
                     placeholder="Select Type..."
                 />
 
-                <button className="input-button">Refresh</button>
+                <button className="input-button" onClick={handleRefresh}>Refresh</button>
 
                 <input
                     onChange={(e) => setTarget(e.target.value)}
@@ -103,6 +140,15 @@ export default function Delivery() {
                     onChange={(e) => setProduct(e.target.value)}
                     value={product}
                     placeholder="Enter product..."
+                />
+
+                <Select
+                    className="selection"
+                    options={sizes}
+                    value={selectedSize}
+                    onChange={setSelectedType}
+                    isClearable
+                    placeholder="Select Type..."
                 />
 
                 <input
@@ -138,7 +184,6 @@ export default function Delivery() {
                                     {columns.map((col, colIndex) => (
                                         <div key={colIndex}>{record[col] || "???"}</div>
                                     ))}
-                                    <button className='table-button'>Edit</button>
                                 </div>
                             ))
                         )}

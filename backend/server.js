@@ -54,7 +54,7 @@ app.post("/api/process-production", async (req, res) =>{
   
 // Process - Delivery
 app.post("/api/process-delivery", async (req, res) => {
-  const { type, target, location, product, date, quantity, price } = req.body;
+  const { type, target, location, product, quantity, price, size } = req.body;
   const now = new Date().toISOString();
 
   console.log("Request body:", req.body);
@@ -66,80 +66,105 @@ app.post("/api/process-delivery", async (req, res) => {
     let branchId = null;
     let orderId = null;
     let orderDetailsId = null;
+    let inventoryId = null;
 
+    // Handle Client / Outlet Logic
     if (type === "Client") {
-      console.log("Checking client:", target);
       const [clientResult] = await db.query("SELECT client_id FROM client WHERE name = ?", [target]);
-      console.log("Client result:", clientResult);
-
       if (clientResult.length > 0) {
         clientId = clientResult[0].client_id;
-        console.log("Client ID found:", clientId);
       } else {
         const [addClient] = await db.query("INSERT INTO client (name) VALUES (?)", [target]);
         clientId = addClient.insertId;
-        console.log("New client ID:", clientId);
       }
     } else if (type === "Outlet") {
-      console.log("Checking branch:", target);
       const [branchResult] = await db.query("SELECT branch_id FROM branch WHERE location = ?", [target]);
-      console.log("Branch result:", branchResult);
-
       if (branchResult.length > 0) {
         branchId = branchResult[0].branch_id;
-        console.log("Branch ID found:", branchId);
       } else {
         const [addBranch] = await db.query("INSERT INTO branch (location) VALUES (?)", [target]);
         branchId = addBranch.insertId;
-        console.log("New branch ID:", branchId);
       }
     }
 
     if (!clientId && !branchId) {
-      console.error("Client or Branch ID is not provided");
       throw new Error("Client or Branch must be provided");
     }
 
-    // Ensure the inventory item exists
-    const [inventoryResult] = await db.query("SELECT inventory_id FROM inventory WHERE inventory_id = ?", [product]);
-    if (inventoryResult.length === 0) {
-      throw new Error("Inventory item does not exist");
+    // Get product ID from Product table
+    const [productResult] = await db.query("SELECT product_id, quantity FROM product WHERE product_name = ?", [product]);
+    if (productResult.length === 0) {
+      throw new Error("Product not found.");
     }
 
+    let productId = productResult[0].product_id;
+    let productQuantity = productResult[0].quantity;
+
+    // Ensure enough stock exists before proceeding
+    if (productQuantity < quantity) {
+      throw new Error("Not enough stock available.");
+    }
+
+    // Fetch latest inventory entry for this product
+    const [inventoryResult] = await db.query(
+      "SELECT inventory_id FROM inventory WHERE product = ? ORDER BY date DESC LIMIT 1",
+      [productId]
+    );
+
+    if (inventoryResult.length === 0) {
+      throw new Error("No inventory found for this product.");
+    }
+
+    inventoryId = inventoryResult[0].inventory_id;
+
+    // Create Order Details
     const subtotal = quantity * price;
     const [addOrderDetails] = await db.query(
-      `INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)`,
-
-      [product, quantity, subtotal]
+      "INSERT INTO order_details (inventory_id, quantity, subtotal) VALUES (?, ?, ?)",
+      [inventoryId, quantity, subtotal]
     );
     orderDetailsId = addOrderDetails.insertId;
-    console.log("New order details ID:", orderDetailsId);
 
+    // Create Order
     const [addOrder] = await db.query(
-      `INSERT INTO orders (manager_id, date, order_details) VALUES (?, ?, ?)`,
-
-      [null, date, orderDetailsId] // Assuming manager_id is null for now
+      "INSERT INTO orders (date, order_details) VALUES (?, ?)",
+      [now, orderDetailsId]
     );
     orderId = addOrder.insertId;
-    console.log("New order ID:", orderId);
 
-    if (clientId) {
-      const [addDelivery] = await db.query(
-        `INSERT INTO delivery (client_id, order_id, location, date) VALUES (?, ?, ?, ?)`,
-
-        [clientId, orderId, location, date]
+    // Create Delivery Record
+    if (type === "Client") {
+      await db.query(
+        "INSERT INTO delivery (client_id, order_id, location, date) VALUES (?, ?, ?, ?)",
+        [clientId, orderId, location, now]
       );
-      const delivery_ref = addDelivery.insertId;
-      console.log("New delivery ID:", delivery_ref);
-    } else if (branchId) {
-      const [addDelivery] = await db.query(
-        `INSERT INTO delivery (branch_id, order_id, location, date) VALUES (?, ?, ?, ?)`,
-
-        [branchId, orderId, location, date]
+    } else {
+      // Outlet deliveries do NOT need location
+      await db.query(
+        "INSERT INTO delivery (order_id, date) VALUES (?, ?)",
+        [orderId, now]
       );
-      const delivery_ref = addDelivery.insertId;
-      console.log("New delivery ID:", delivery_ref);
+
+      // Ensure branch inventory reflects the change
+      const [stockResult] = await db.query(
+        "SELECT quantity FROM branch_inventory WHERE inventory_id = ? AND branch_id = ?",
+        [inventoryId, branchId]
+      );
+
+      if (stockResult.length === 0 || stockResult[0].quantity < quantity) {
+        throw new Error("Not enough stock in branch inventory.");
+      }
+
+      let newBranchStock = stockResult[0].quantity - quantity;
+      await db.query(
+        "UPDATE branch_inventory SET quantity = ? WHERE inventory_id = ? AND branch_id = ?",
+        [newBranchStock, inventoryId, branchId]
+      );
     }
+
+    // Subtract delivered quantity from Product Table
+    let newProductQuantity = productQuantity - quantity;
+    await db.query("UPDATE product SET quantity = ? WHERE product_id = ?", [newProductQuantity, productId]);
 
     await db.query("COMMIT");
     res.status(201).json({ message: "Delivery process recorded successfully" });
@@ -230,22 +255,30 @@ app.get("/api/production-records", async (req, res) => {
   const { date } = req.query
 
   try {
-    const [productionRecords] = await db.query(` 
+    let query = `
       SELECT 
-        b.batch_id AS batch_id, 
-        b.batch_id AS batch_id, 
+        b.batch_id, 
         b.vat_num, 
         bd.weight AS total_weight, 
         a.weight AS starting_weight, 
         af.weight AS final_weight, 
-        b.date
+        DATE(b.date) as date
       FROM batch b
       JOIN batch_details bd ON b.batch_id = bd.batch_id
       JOIN antala a ON bd.batch_details_id = a.batch_details_id
       JOIN antala_final af ON a.antala_id = af.antala_id
-      ORDER BY b.date
-    `);
+    `
+    const filterDate = []
+
+    if (date){
+      query += 'WHERE DATE(b.date) = ?'
+      filterDate.push(date)
+    }
+
+    query += ` ORDER BY b.date`
     
+    const [productionRecords] = await db.query(query, filterDate);
+
     res.json(productionRecords);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -253,26 +286,39 @@ app.get("/api/production-records", async (req, res) => {
 });
 
 
-app.get("/api/delivery-records", async (req, res) => {
-  const { order = "ASC" } = req.query;
-  const sortOrder = order.toUpperCase() === "DESC" ? "DESC" : "ASC";
+app.get("/api/client-delivery-records", async (req, res) => {
+  const { date } = req.query;
 
   try {
-    const [deliveryRecords] = await db.query(`
+    let query = `
       SELECT 
         d.delivery_id, 
         c.name AS client_name,  
+        pd.product_name,
+        pd.size,
         od.quantity,
         od.subtotal, 
         d.location,
-        d.date
+        DATE(d.date) AS date
       FROM delivery d
-      JOIN client c ON d.delivery_id = c.client_id
-      JOIN order_details od ON d.delivery_id = od.order_id
       JOIN client c ON d.client_id = c.client_id
-      JOIN order_details od ON d.id = od.delivery_id
-      ORDER BY d.date ${sortOrder}
-    `);
+      JOIN orders o ON d.order_id = o.order_id
+      JOIN order_details od ON o.order_details = od.order_details_id
+      JOIN inventory i ON od.inventory_id = i.inventory_id
+      JOIN product p ON i.product= p.product_id
+      JOIN Product_details pd ON p.product_name = pd.product_id
+    `;
+
+    const filterDate = [];
+
+    if (date) {
+      query += " WHERE d.date = ?";
+      filterDate.push(date);
+    }
+
+    query += " ORDER BY DATE(d.date)";
+
+    const [deliveryRecords] = await db.query(query, filterDate);
     res.json(deliveryRecords);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -280,12 +326,12 @@ app.get("/api/delivery-records", async (req, res) => {
 });
 
 
+
 app.get("/api/supply-records", async (req, res) => {
-  const { order = "ASC" } = req.query;
-  const sortOrder = order.toUpperCase() === "DESC" ? "DESC" : "ASC";
+  const { date } = req.query;
 
   try {
-    const [supplyRecords] = await db.query(`
+    let query = `
       SELECT 
         s.supply_id, 
         sp.name AS supplier_name, 
@@ -294,15 +340,64 @@ app.get("/api/supply-records", async (req, res) => {
         sd.unit, 
         sd.price, 
         (sd.price * sd.quantity) AS subtotal,
-        s.date
+        DATE(s.date) AS date
       FROM supply s
       JOIN supplier sp ON s.supplier_id = sp.supplier_id
       JOIN supply_details sd ON s.supply_id = sd.supply_id
       JOIN item i ON sd.item_id = i.item_id
-      join item_type it ON i.item_type = it.item_type_id
-      ORDER BY s.date ${sortOrder}
-    `);
+      JOIN item_type it ON i.item_type = it.item_type_id
+    `;
+
+    const filterDate = [];
+
+    if (date) {
+      query += " WHERE DATE(s.date) = ?";
+      filterDate.push(date);
+    }
+
+    query += " ORDER BY s.date";
+
+    const [supplyRecords] = await db.query(query, filterDate);
     res.json(supplyRecords);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/outlet-delivery-records", async (req, res) => {
+  const { date } = req.query;
+
+  try {
+    let query = `
+      SELECT 
+        d.delivery_id, 
+        b.location AS branch,  
+        pd.product_name, 
+        pd.size, 
+        od.quantity,
+        od.subtotal, 
+        DATE(d.date) AS date
+      FROM delivery d
+      JOIN orders o ON d.order_id = o.order_id
+      JOIN order_details od ON o.order_details = od.order_details_id
+      JOIN inventory i ON od.inventory_id = i.inventory_id
+      JOIN product p ON i.product = p.product_id
+      JOIN Product_details pd ON p.product_name = pd.product_id
+      JOIN branch_inventory bi ON o.order_id = bi.order_id
+      JOIN branch b ON bi.branch_id = b.branch_id
+    `;
+
+    const filterDate = [];
+
+    if (date) {
+      query += " WHERE d.date = ?";
+      filterDate.push(date);
+    }
+
+    query += " ORDER BY DATE(d.date)";
+
+    const [outletDeliveryRecords] = await db.query(query, filterDate);
+    res.json(outletDeliveryRecords);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1126,5 +1221,26 @@ app.get("/api/inventory-view-production-inventory", async (req, res) =>{
   } catch (error) {
     console.error("Error fetching inventory:", error)
     res.status(500).json({ error: error.message })
+  }
+})
+
+
+app.get("/api/inventory-view-supply-inventory", async (req, res) => {
+  try {
+    const [supplyRecords] = await db.query( `
+      SELECT 
+    s.supply_id,  
+    it.item_name,
+    SUM(sd.quantity) AS total
+    FROM supply s
+    JOIN supplier sp ON s.supplier_id = sp.supplier_id
+    JOIN supply_details sd ON s.supply_id = sd.supply_id
+    JOIN item i ON sd.item_id = i.item_id
+    JOIN item_type it ON i.item_type = it.item_type_id
+    GROUP BY it.item_name;`
+  );
+    res.json(supplyRecords);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 })
