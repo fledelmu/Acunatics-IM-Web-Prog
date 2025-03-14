@@ -15,6 +15,7 @@ export default function InvProduction(){
     const [product, setProduct] = useState("")
     const [size, setSize] = useState(sizes[0])
     const [quantity, setQuantity] = useState("")
+    const [batch, setBatch] = useState("")
 
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
@@ -45,7 +46,8 @@ export default function InvProduction(){
             const data = {
                 product_name: product,   
                 size: size?.value || "",  
-                quantity: Number(quantity)
+                quantity: Number(quantity),
+                batch: batch
             };
         
             console.log("Data being sent:", data); // Debugging
@@ -101,6 +103,15 @@ export default function InvProduction(){
                             value={quantity}
                             onChange={(e) => setQuantity(e.target.value)}
                             placeholder='Enter quantity...'/>
+                        </div>
+                        <div>
+                            <label><h3>Batch:</h3></label>
+                        </div>
+                        <div>
+                            <input 
+                            value={batch}
+                            onChange={(e) => setBatch(e.target.value)}
+                            placeholder='Enter batch...'/>
                         </div>
                         <Select
                         className="selection"
