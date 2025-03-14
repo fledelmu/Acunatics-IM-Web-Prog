@@ -572,9 +572,9 @@ app.get("/api/manage-search-product", async(req, res) => {
   }
 })
 app.put("/api/manage-edit-product", async (req, res) => {
-  const { id, name, size, price } = req.body;
-
-  if (!id || (!name && !size && !price)) {
+  const { product_id, product_name, size, price } = req.body;
+  console.log("received data:", req.body);
+  if (!product_id || (!product_name && !size && !price)) {
     return res.status(400).json({ message: "Product ID and at least one field to update are required" });
   }
 
@@ -584,9 +584,9 @@ app.put("/api/manage-edit-product", async (req, res) => {
     let updateFields = [];
     let updateValues = [];
 
-    if (name) {
+    if (product_name) {
       updateFields.push("product_name = ?");
-      updateValues.push(name);
+      updateValues.push(product_name);
     }
     if (size) {
       updateFields.push("size = ?");
@@ -602,7 +602,7 @@ app.put("/api/manage-edit-product", async (req, res) => {
       return res.status(400).json({ message: "No valid fields provided for update" });
     }
 
-    updateValues.push(id);
+    updateValues.push(product_id);
 
     const [updateResult] = await db.query(
       `UPDATE Product_details SET ${updateFields.join(", ")} WHERE product_id = ?`,
@@ -731,10 +731,11 @@ app.get("/api/manage-search-item", async(req, res) => {
     res.status(500).json({data: []})
   }
 })
-app.put("/api/manage-edit-item", async (req, res) => {
-  const { id, name, type, unit, price } = req.body;
 
-  if (!id || (!name && !type && !unit && !price)) {
+app.put("/api/manage-edit-item", async (req, res) => {
+  const { item_type_id, item_name, item_type, unit, price } = req.body;
+
+  if (!item_type_id || (!item_name && !item_type && !unit && !price)) {
     return res.status(400).json({ message: "Item ID and at least one field to update are required" });
   }
 
@@ -744,13 +745,13 @@ app.put("/api/manage-edit-item", async (req, res) => {
     let updateFields = [];
     let updateValues = [];
 
-    if (name) {
+    if (item_name) {
       updateFields.push("item_name = ?");
-      updateValues.push(name);
+      updateValues.push(item_name);
     }
-    if (type) {
+    if (item_type) {
       updateFields.push("item_type = ?");
-      updateValues.push(type);
+      updateValues.push(item_type);
     }
     if (unit) {
       updateFields.push("unit = ?");
@@ -766,10 +767,10 @@ app.put("/api/manage-edit-item", async (req, res) => {
       return res.status(400).json({ message: "No valid fields provided for update" });
     }
 
-    updateValues.push(id);
+    updateValues.push(item_type_id);
 
     const [updateResult] = await db.query(
-      `UPDATE item_type SET ${updateFields.join(", ")} WHERE item_id = ?`,
+      `UPDATE item_type SET ${updateFields.join(", ")} WHERE item_type_id = ?`,
       updateValues
     );
 
@@ -786,62 +787,6 @@ app.put("/api/manage-edit-item", async (req, res) => {
     res.status(500).json({ message: "Error updating item", error: error.message });
   }
 });
-
-app.put("/api/manage-edit-item", async (req, res) => {
-  const { id, name, type, unit, price } = req.body;
-
-  if (!id || (!name && !type && !unit && !price)) {
-    return res.status(400).json({ message: "Item ID and at least one field to update are required" });
-  }
-
-  try {
-    await db.query("START TRANSACTION");
-
-    let updateFields = [];
-    let updateValues = [];
-
-    if (name) {
-      updateFields.push("item_name = ?");
-      updateValues.push(name);
-    }
-    if (type) {
-      updateFields.push("item_type = ?");
-      updateValues.push(type);
-    }
-    if (unit) {
-      updateFields.push("unit = ?");
-      updateValues.push(unit);
-    }
-    if (price !== undefined) {
-      updateFields.push("price = ?");
-      updateValues.push(price);
-    }
-
-    if (updateFields.length === 0) {
-      await db.query("ROLLBACK");
-      return res.status(400).json({ message: "No valid fields provided for update" });
-    }
-
-    updateValues.push(id);
-
-    const [updateResult] = await db.query(
-      "UPDATE item_type SET ${updateFields.join(", ")} WHERE item_id = ?",
-      updateValues
-    );
-
-    if (updateResult.affectedRows === 0) {
-      await db.query("ROLLBACK");
-      return res.status(404).json({ message: "Item not found or no changes made" });
-    }
-
-    await db.query("COMMIT");
-    res.status(200).json({ message: "Item updated successfully" });
-  } catch (error) {
-    await db.query("ROLLBACK");
-    console.error("Error updating item:", error);
-    res.status(500).json({ message: "Error updating item", error: error.message });
-  }
-})
 
 // Manage - Client
 

@@ -27,6 +27,17 @@ export const processDelivery = async (data) => {
     }
 }
 
+export const processSupply = async (data) => {
+    try{
+        const response = await axios.post(`${URL}/api/process-supply`, data)
+
+        return response.data
+    } catch(error){
+        console.error("Error processing supply:", error)
+        return { success: false, message: "Error processing supply" }
+    }
+}
+
 // Records Tabs
 export const fetchRecords = async (type) =>{
     try{
@@ -242,6 +253,7 @@ export const searchProducts = async (data) => {
             params : {name : data.name}
         })
 
+        console.log("Response from backend:", response.data);
         return response.data
     } catch (error) {
         console.error("Trouble finding product! ", error)
@@ -249,13 +261,24 @@ export const searchProducts = async (data) => {
     }
 }
 
-export const editProduct = async (data) => {
-    try{
-        const response = await axios.get(`${URL}/api/manage-edit-product`)
-        return response.data
+export const editProduct = async (editData) => {
+    try {
+        console.log("Sending data to backend:", editData); 
+        const response = await axios.put(`${URL}/api/manage-edit-product`, editData, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.status !== 200) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        console.log("Response from backend:", response.data); // Log the response from the backend
+        return response.data;
     } catch (error) {
-        console.error("Trouble editing product! ", error)
-        return []
+        console.error("Error editing client:", error);
+        return null;
     }
 }
 
@@ -299,13 +322,24 @@ export const searchItem = async (data) => {
     }
 }
 
-export const editItem = async (data) => {
-    try{
-        const response = await axios.get(`${URL}/api/manage-`)
-        return response.data
+export const editItem = async (editData) => {
+    try {
+        console.log("Sending data to backend:", editData); 
+        const response = await axios.put(`${URL}/api/manage-edit-item`, editData, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.status !== 200) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        console.log("Response from backend:", response.data); // Log the response from the backend
+        return response.data;
     } catch (error) {
-        console.error("Error editing item: ", error)
-        return []
+        console.error("Error editing client:", error);
+        return null;
     }
 }
 //Inventory 
