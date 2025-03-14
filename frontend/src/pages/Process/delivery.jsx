@@ -14,11 +14,13 @@ export default function Delivery() {
         { value: "S", label: "S" },
         { value: "M", label: "M" },
         { value: "L", label: "L" }
-    ]
+    ];
 
     const [selectedType, setSelectedType] = useState(null);
     const [records, setRecords] = useState([]);
     const [columns, setColumns] = useState([]);
+    const [inventoryRecords, setInventoryRecords] = useState([]);
+    const [inventoryColumns, setInventoryColumns] = useState([]);
 
     const [selectedSize, setSelectedSize] = useState(null);
     const [target, setTarget] = useState('');
@@ -30,13 +32,14 @@ export default function Delivery() {
     useEffect(() => {
         async function loadDelivery() {
             try {
-                let table = await fetchRecords('client-delivery-records')
+                let table = await fetchRecords('client-delivery-records');
                 if (table.length > 0) {
-                    setColumns(Object.keys(table[0]))
-                    setRecords(table)
+                    setColumns(Object.keys(table[0]));
+                    setRecords(table);
                 }
+                await refreshInventory();
             } catch (error) {
-                console.error("Error loading records:", error)
+                console.error("Error loading records:", error);
             }
         }
         loadDelivery();
@@ -60,20 +63,17 @@ export default function Delivery() {
 
         try {
             await processDelivery(data);
-            let table = await fetchRecords('client-delivery-records');
-
-
-            if (selectedType === "Client") {
-                table = await fetchRecords('client-delivery-records');
-            }
             
-            if (selectedType === "Outlet") {
+            // Refresh delivery records
+            let table = await fetchRecords('client-delivery-records');
+            if (selectedType.value === "Outlet") {
                 table = await fetchRecords('outlet-delivery-records');
             }
-
-
             setColumns(table.length > 0 ? Object.keys(table[0]) : []);
             setRecords(table);
+
+            // ✅ Refresh inventory stock
+            await refreshInventory();
 
             // Reset input fields
             setTarget('');
@@ -87,24 +87,35 @@ export default function Delivery() {
         }
     };
 
-    const handleRefresh = async () => {
-        let table
+    const refreshInventory = async () => {
         try {
-            if (selectedType.value === "Client") {
+            let inventory = await fetchRecords('production-inventory'); // Replace with correct API
+            setInventoryColumns(inventory.length > 0 ? Object.keys(inventory[0]) : []);
+            setInventoryRecords(inventory);
+        } catch (error) {
+            console.error("Error refreshing inventory:", error);
+            alert("An error occurred while refreshing inventory.");
+        }
+    };
+
+    const handleRefresh = async () => {
+        try {
+            let table;
+            if (selectedType?.value === "Client") {
                 table = await fetchRecords('client-delivery-records');
-            }
-            
-            if (selectedType.value === "Outlet") {
+            } else if (selectedType?.value === "Outlet") {
                 table = await fetchRecords('outlet-delivery-records');
             }
 
             setColumns(table.length > 0 ? Object.keys(table[0]) : []);
             setRecords(table);
+            await refreshInventory();
         } catch (error) {
             console.error("Error in handleRefresh:", error);
             alert("An error occurred while refreshing records.");
         }
-    }
+    };
+
     return (
         <div className="content">
             <h2>Delivery Report</h2>
@@ -146,9 +157,9 @@ export default function Delivery() {
                     className="selection"
                     options={sizes}
                     value={selectedSize}
-                    onChange={setSelectedType}
+                    onChange={setSelectedSize}
                     isClearable
-                    placeholder="Select Type..."
+                    placeholder="Select Size..."
                 />
 
                 <input
