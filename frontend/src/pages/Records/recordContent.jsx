@@ -6,7 +6,6 @@ import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import {fetchRecords} from '../../utils/api'
 import dayjs from 'dayjs'
-import Delivery from '../Process/delivery'
 
 
 export default function RecordsProduction(){
