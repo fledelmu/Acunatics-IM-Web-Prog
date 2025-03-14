@@ -230,22 +230,30 @@ app.get("/api/production-records", async (req, res) => {
   const { date } = req.query
 
   try {
-    const [productionRecords] = await db.query(` 
+    let query = `
       SELECT 
-        b.batch_id AS batch_id, 
-        b.batch_id AS batch_id, 
+        b.batch_id, 
         b.vat_num, 
         bd.weight AS total_weight, 
         a.weight AS starting_weight, 
         af.weight AS final_weight, 
-        b.date
+        DATE(b.date) as date
       FROM batch b
       JOIN batch_details bd ON b.batch_id = bd.batch_id
       JOIN antala a ON bd.batch_details_id = a.batch_details_id
       JOIN antala_final af ON a.antala_id = af.antala_id
-      ORDER BY b.date
-    `);
+    `
+    const filterDate = []
+
+    if (date){
+      query += 'WHERE DATE(b.date) = ?'
+      filterDate.push(date)
+    }
+
+    query += ` ORDER BY b.date`
     
+    const [productionRecords] = await db.query(query, filterDate);
+
     res.json(productionRecords);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -253,26 +261,39 @@ app.get("/api/production-records", async (req, res) => {
 });
 
 
-app.get("/api/delivery-records", async (req, res) => {
-  const { order = "ASC" } = req.query;
-  const sortOrder = order.toUpperCase() === "DESC" ? "DESC" : "ASC";
+app.get("/api/client-delivery-records", async (req, res) => {
+  const { date } = req.query;
 
   try {
-    const [deliveryRecords] = await db.query(`
+    let query = `
       SELECT 
         d.delivery_id, 
         c.name AS client_name,  
+        pd.product_name,
+        pd.size,
         od.quantity,
         od.subtotal, 
         d.location,
-        d.date
+        DATE(d.date) AS date
       FROM delivery d
-      JOIN client c ON d.delivery_id = c.client_id
-      JOIN order_details od ON d.delivery_id = od.order_id
       JOIN client c ON d.client_id = c.client_id
-      JOIN order_details od ON d.id = od.delivery_id
-      ORDER BY d.date ${sortOrder}
-    `);
+      JOIN orders o ON d.order_id = o.order_id
+      JOIN order_details od ON o.order_details = od.order_details_id
+      JOIN inventory i ON od.inventory_id = i.inventory_id
+      JOIN product p ON i.product= p.product_id
+      JOIN Product_details pd ON p.product_name = pd.product_id
+    `;
+
+    const filterDate = [];
+
+    if (date) {
+      query += " WHERE d.date = ?";
+      filterDate.push(date);
+    }
+
+    query += " ORDER BY DATE(d.date)";
+
+    const [deliveryRecords] = await db.query(query, filterDate);
     res.json(deliveryRecords);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -280,12 +301,12 @@ app.get("/api/delivery-records", async (req, res) => {
 });
 
 
+
 app.get("/api/supply-records", async (req, res) => {
-  const { order = "ASC" } = req.query;
-  const sortOrder = order.toUpperCase() === "DESC" ? "DESC" : "ASC";
+  const { date } = req.query;
 
   try {
-    const [supplyRecords] = await db.query(`
+    let query = `
       SELECT 
         s.supply_id, 
         sp.name AS supplier_name, 
@@ -294,15 +315,64 @@ app.get("/api/supply-records", async (req, res) => {
         sd.unit, 
         sd.price, 
         (sd.price * sd.quantity) AS subtotal,
-        s.date
+        DATE(s.date) AS date
       FROM supply s
       JOIN supplier sp ON s.supplier_id = sp.supplier_id
       JOIN supply_details sd ON s.supply_id = sd.supply_id
       JOIN item i ON sd.item_id = i.item_id
-      join item_type it ON i.item_type = it.item_type_id
-      ORDER BY s.date ${sortOrder}
-    `);
+      JOIN item_type it ON i.item_type = it.item_type_id
+    `;
+
+    const filterDate = [];
+
+    if (date) {
+      query += " WHERE DATE(s.date) = ?";
+      filterDate.push(date);
+    }
+
+    query += " ORDER BY s.date";
+
+    const [supplyRecords] = await db.query(query, filterDate);
     res.json(supplyRecords);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/outlet-delivery-records", async (req, res) => {
+  const { date } = req.query;
+
+  try {
+    let query = `
+      SELECT 
+        d.delivery_id, 
+        b.location AS branch,  
+        pd.product_name, 
+        pd.size, 
+        od.quantity,
+        od.subtotal, 
+        DATE(d.date) AS date
+      FROM delivery d
+      JOIN orders o ON d.order_id = o.order_id
+      JOIN order_details od ON o.order_details = od.order_details_id
+      JOIN inventory i ON od.inventory_id = i.inventory_id
+      JOIN product p ON i.product = p.product_id
+      JOIN Product_details pd ON p.product_name = pd.product_id
+      JOIN branch_inventory bi ON o.order_id = bi.order_id
+      JOIN branch b ON bi.branch_id = b.branch_id
+    `;
+
+    const filterDate = [];
+
+    if (date) {
+      query += " WHERE d.date = ?";
+      filterDate.push(date);
+    }
+
+    query += " ORDER BY DATE(d.date)";
+
+    const [outletDeliveryRecords] = await db.query(query, filterDate);
+    res.json(outletDeliveryRecords);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1126,5 +1196,26 @@ app.get("/api/inventory-view-production-inventory", async (req, res) =>{
   } catch (error) {
     console.error("Error fetching inventory:", error)
     res.status(500).json({ error: error.message })
+  }
+})
+
+
+app.get("/api/inventory-view-supply-inventory", async (req, res) => {
+  try {
+    const [supplyRecords] = await db.query( `
+      SELECT 
+    s.supply_id,  
+    it.item_name,
+    SUM(sd.quantity) AS total
+    FROM supply s
+    JOIN supplier sp ON s.supplier_id = sp.supplier_id
+    JOIN supply_details sd ON s.supply_id = sd.supply_id
+    JOIN item i ON sd.item_id = i.item_id
+    JOIN item_type it ON i.item_type = it.item_type_id
+    GROUP BY it.item_name;`
+  );
+    res.json(supplyRecords);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 })

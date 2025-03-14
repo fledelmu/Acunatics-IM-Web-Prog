@@ -138,7 +138,6 @@ export default function Supply() {
                                     {columns.map((col, colIndex) => (
                                         <div key={colIndex}>{record[col] || "???"}</div>
                                     ))}
-                                    <button className='table-button'>Edit</button>
                                 </div>
                             ))
                         )}

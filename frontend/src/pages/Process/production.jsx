@@ -119,7 +119,6 @@ export default function Production(){
                                 {columns.map((col, colIndex) => (
                                     <div key={colIndex}>{record[col] || "???"}</div>
                                 ))}
-                                <button className='table-button' onClick={() => handleEdit(record)}>Edit</button>
                             </div>
                         ))
                     )}

@@ -39,18 +39,6 @@ export default function InvProduction(){
                 
                 <div className="inventory-form-container">
                     <div><h2>Production Inventory</h2></div>
-                    <div className="inventory-form">
-                        <div>
-                            <input
-                            className="selection"
-                            options={product}
-                            value={selectedProd}
-                            onChange={setSelectedProd}
-                            placeholder= "Enter product..."
-                            />
-                        </div>
-                        <button className="input-button">Proceed</button>
-                    </div>
                     <div className="table-container">
                         {columns.length === 0 ? (
                             <div>No records found</div>

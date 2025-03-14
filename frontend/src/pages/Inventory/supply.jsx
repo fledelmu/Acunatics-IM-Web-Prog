@@ -1,30 +1,32 @@
 import '../../App.css'
 import './inventory.css'
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
+import {viewInventoryStalls} from '../../utils/api'
 
 export default function InvStall(){
-    const [item, setItem] = useState("");
     const [records, setRecords] = useState([])
     const [columns, setColumns] = useState([])
     
+    useEffect(() => {
+        async function loadSupply() {
+            let table = []
+            table = await viewInventoryStalls()
+            if (table.length > 0) { 
+                setRecords(table)
+                setColumns(Object.keys(table[0]))
+            } else {
+                setRecords([])
+                setColumns([])
+            }
+        }
+        loadSupply()
+    },[])
+
     return(
         <div className="content">
             
             <div className="inventory-form-container">
                 <div><h2>Supply Inventory</h2></div>
-                <div className="inventory-form">
-                    <div>
-                        <input
-                            className="selection"
-                            value={item}
-                            onChange={setItem}
-                            isClearable
-                            placeholder="Enter item..."
-                        />
-                    </div>
-                    <button className="input-button">Search</button>
-                </div>
-                
                     <div className="table-container">
                         {columns.length === 0 ? (
                             <div>No records found</div>
