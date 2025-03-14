@@ -228,7 +228,7 @@ app.post("/api/process-supply", async (req, res) => {
 // Records Tab
 app.get("/api/production-records", async (req, res) => {
   const { date } = req.query
-  
+
   try {
     const [productionRecords] = await db.query(` 
       SELECT 
@@ -1041,7 +1041,73 @@ app.post("/api/add-stall-inventory", async (req, res) => {
   }
 });
 
+app.post("/api/inventory-add-production-inventory", async (req, res) => {
+  const { product_name, size, quantity } = req.body;
+  const now = new Date().toISOString();
 
+  console.log("Received request body:", req.body);
+
+  if (!product_name || !size || !quantity) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+    await db.query("START TRANSACTION");
+
+    // Check if product details exist
+    const [productDetailsResult] = await db.query(
+      "SELECT product_id FROM Product_details WHERE product_name = ? AND size = ?",
+      [product_name, size]
+    );
+
+    let productDId;
+
+    if (productDetailsResult.length > 0) {
+      productDId = productDetailsResult[0].product_id;
+    } else {
+      // Insert into Product_details
+      const [addProductDetails] = await db.query(
+        "INSERT INTO Product_details (product_name, size) VALUES (?, ?)",
+        [product_name, size]
+      );
+      productDId = addProductDetails.insertId;
+      console.log(`Inserted new product details with ID: ${productId}`);
+    }
+
+
+    // Ensure `productId` is valid before proceeding
+    if (!productDId) {
+      return res.status(400).json({ message: "Failed to retrieve or insert product." });
+    }
+
+
+    const [addProduct] = await db.query("INSERT INTO product (product_name, quantity) VALUES (?,?)", [productDId, quantity])
+
+  
+    // Insert into inventory
+    const [addInventory] = await db.query(
+      `INSERT INTO inventory (product, date) VALUES (?, ?)`,
+      [productDId, now]
+    );
+    
+    console.log(`Inserted into inventory with ID: ${addInventory.insertId}`);
+
+    // Insert into product table using `productId`
+    await db.query(
+      `INSERT INTO product (product_name, quantity) VALUES (?, ?) 
+       ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)`,
+      [productDId, quantity]
+    );
+    console.log(`Inserted/Updated product table with ID: ${productDId}`);
+
+    await db.query("COMMIT");
+    res.status(201).json({ message: "Production inventory added successfully" });
+  } catch (error) {
+    await db.query("ROLLBACK");
+    console.error("Error adding production inventory:", error);
+    res.status(500).json({ message: "Error adding production inventory", error: error.message });
+  }
+});
 
 
 app.get("/api/inventory-view-production-inventory", async (req, res) =>{

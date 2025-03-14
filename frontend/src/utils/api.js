@@ -58,7 +58,7 @@ export const fetchSuppliers = async () => {
     try{
         const response = await axios.get(`${URL}/api/manage-get-suppliers`)
 
-        return response.data
+        return response.data    
     } catch (error) {
         console.error("Trouble retrieving suppliers!", error)
         return []
