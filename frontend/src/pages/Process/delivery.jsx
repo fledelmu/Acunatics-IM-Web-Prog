@@ -6,7 +6,6 @@ import { processDelivery, fetchRecords } from '../../utils/api';
 
 export default function Delivery() {
     const typeOptions = [
-        { value: "Outlet", label: "Outlet" },
         { value: "Client", label: "Client" }
     ];
 
@@ -28,9 +27,10 @@ export default function Delivery() {
     const [price, setPrice] = useState('');
 
     useEffect(() => {
+        let isMounted = true;
         async function loadDelivery() {
             try {
-                let table = await fetchRecords('client-delivery-records')
+                let table = await fetchRecords('delivery-records')
                 if (table.length > 0) {
                     setColumns(Object.keys(table[0]))
                     setRecords(table)
@@ -40,6 +40,7 @@ export default function Delivery() {
             }
         }
         loadDelivery();
+        return () => { isMounted = false; };
     }, []);
 
     const addDelivery = async () => {
@@ -63,15 +64,6 @@ export default function Delivery() {
             let table = [];
 
 
-            if (selectedType?.value === "Client") {
-                table = await fetchRecords('client-delivery-records');
-            }
-            
-            if (selectedType?.value === "Outlet") {
-                table = await fetchRecords('outlet-delivery-records');
-            }
-
-
             setColumns(table.length > 0 ? Object.keys(table[0]) : []);
             setRecords(table);
 
@@ -91,13 +83,8 @@ export default function Delivery() {
         let table
         try {
             if (selectedType.value === "Client") {
-                table = await fetchRecords('client-delivery-records');
+                table = await fetchRecords('delivery-records');
             }
-            
-            if (selectedType.value === "Outlet") {
-                table = await fetchRecords('outlet-delivery-records');
-            }
-
             setColumns(table.length > 0 ? Object.keys(table[0]) : []);
             setRecords(table);
         } catch (error) {
@@ -119,9 +106,6 @@ export default function Delivery() {
                     isClearable
                     placeholder="Select Type..."
                 />
-
-                <button className="input-button" onClick={handleRefresh}>Refresh</button>
-
                 <input
                     onChange={(e) => setTarget(e.target.value)}
                     value={target}
