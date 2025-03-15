@@ -130,6 +130,7 @@ app.post("/api/process-delivery", async (req, res) => {
       "INSERT INTO delivery (client_id, order_id, location, date) VALUES (?, ?, ?, ?)",
       [clientId, orderId, location, now]
     );
+    
 
     await db.query("COMMIT");
     res.status(201).json({ message: "Delivery process recorded successfully" });
