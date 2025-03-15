@@ -11,8 +11,7 @@ import dayjs from 'dayjs'
 export default function RecordsProduction(){
     const type = [
         { value: "Production", label: "Production" },
-        { value: "DeliveryOutlet", label: "Delivery - Outlet" },
-        { value: "DeliveryClient", label: "Delivery - Client" },
+        { value: "Delivery", label: "Delivery" },
         { value: "Supply", label: "Supply" }
     ]
 
@@ -36,8 +35,7 @@ export default function RecordsProduction(){
 
             const endPoints = {
                 Production: 'production-records',
-                DeliveryClient: 'client-delivery-records',
-                DeliveryOutlet: 'outlet-delivery-records',
+                Delivery: 'delivery-records',
                 Supply: 'supply-records',
             };
 
