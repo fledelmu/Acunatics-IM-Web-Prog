@@ -53,14 +53,14 @@ export default function Delivery() {
             target: target,
             location: selectedType.value === "Client" ? location : "", 
             product: product,
-            quantity: quantity,
+            quantity: Number(quantity),
             price: price,
             size: selectedSize?.value || "N/A"
         };
 
         try {
             await processDelivery(data);
-            let table = await fetchRecords('client-delivery-records');
+            let table = [];
 
 
             if (selectedType?.value === "Client") {

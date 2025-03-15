@@ -58,7 +58,7 @@ app.post("/api/process-delivery", async (req, res) => {
   const { type, target, location, product, quantity, price, size } = req.body;
   const now = new Date().toISOString();
 
-  console.log("Request body:", req.body);
+  console.log("Request body :", req.body);
 
   try {
     await db.query("START TRANSACTION");
@@ -143,24 +143,27 @@ app.post("/api/process-delivery", async (req, res) => {
         "INSERT INTO delivery (order_id, date) VALUES (?, ?)",
         [orderId, now]
       );
-      // Update branch inventory
+      
+      // Update branch inventory - we're ADDING to outlet inventory
       const [stockResult] = await db.query(
         "SELECT quantity FROM branch_inventory WHERE inventory_id = ? AND branch_id = ?",
         [inventoryId, branchId]
       );
 
-      if (!stockResult.length){
-        await db.query(
-          "INSERT INTO branch_inventory (inventory_id, branch_id, quantity) VALUES (?, ?, ?)",
-          [inventoryId, branchId, quantity]
-        );
-      } else {
+      if (stockResult.length > 0) {
+        // Simply add the new quantity to existing stock
+        let newQuantity = stockResult[0].quantity + parseInt(quantity);
         await db.query(
           "UPDATE branch_inventory SET quantity = ? WHERE inventory_id = ? AND branch_id = ?",
-          [stockResult[0].quantity - quantity, inventoryId, branchId]
+          [newQuantity, inventoryId, branchId]
+        );
+      } else {
+        // Create new inventory entry for this branch
+        await db.query(
+          "INSERT INTO branch_inventory (branch_id, order_id, quantity) VALUES (?, ?, ?)",
+          [branchId, orderId, quantity]
         );
       }
-      
     }
 
     await db.query("COMMIT");
@@ -285,7 +288,7 @@ app.get("/api/production-records", async (req, res) => {
 });
 
 
-app.get("/api/client-delivery-records", async (req, res) => {
+app.get("/api/delivery-records", async (req, res) => {
   const { date } = req.query;
 
   try {
@@ -306,13 +309,15 @@ app.get("/api/client-delivery-records", async (req, res) => {
       JOIN inventory i ON od.inventory_id = i.inventory_id
       JOIN batch_product bp ON i.batch_id = bp.batch_id
       JOIN product p ON bp.product_id = p.product_id
-      JOIN Product_details pd ON p.product_name = pd.product_id 
+      JOIN Product_details pd ON p.product_name = pd.product_id
+      WHERE d.location IS NOT NULL 
+      AND d.client_id IS NOT NULL
     `;
 
     const filterDate = [];
 
     if (date) {
-      query += " WHERE d.date = ?";
+      query += " AND d.date = ?";
       filterDate.push(date);
     }
 
@@ -361,46 +366,6 @@ app.get("/api/supply-records", async (req, res) => {
     res.json(supplyRecords);
   } catch (err) {
     res.status(500).json({ error: err.message });
-  }
-});
-
-app.get("/api/outlet-delivery-records", async (req, res) => {
-  const { date } = req.query;
-
-  try {
-      let query = `
-          SELECT 
-              d.delivery_id, 
-              b.location,  
-              pd.product_name, 
-              pd.size, 
-              od.quantity,
-              od.subtotal, 
-              DATE(d.date) AS date
-          FROM delivery d
-          JOIN orders o ON d.order_id = o.order_id
-          JOIN order_details od ON o.order_details = od.order_details_id
-          JOIN inventory i ON od.inventory_id = i.inventory_id
-          JOIN batch_product bp ON i.batch_id = bp.inventory_id
-          JOIN product p ON bp.product_id = p.product_id  
-          JOIN Product_details pd ON p.product_name = pd.product_id
-          JOIN branch_inventory bi ON o.order_id = bi.inventory_id
-          JOIN branch b ON b.branch_id = bi.branch_id
-      `;
-
-      const filterDate = [];
-
-      if (date) {
-          query += " WHERE d.date = ?";
-          filterDate.push(date);
-      }
-
-      query += " ORDER BY DATE(d.date)";
-
-      const [outletDeliveryRecords] = await db.query(query, filterDate);
-      res.json(outletDeliveryRecords);
-  } catch (err) {
-      res.status(500).json({ error: err.message });
   }
 });
 
@@ -1128,8 +1093,11 @@ app.get("/api/inventory-stalls-inventory-search", async (req, res) => {
          bi.quantity AS Quantity
        FROM Product_details pd
        JOIN product p ON pd.product_id = p.product_name
-       JOIN branch_product bp ON pd.product_id = bp.product_id
-       JOIN branch_inventory bi ON bp.inventory_id = bi.inventory_id
+       JOIN batch_product bp ON p.product_id = bp.product_id
+       JOIN inventory i ON bp.batch_id = i.inventory_id
+       JOIN order_details od ON i.inventory_id = od.inventory_id
+       JOIN orders o ON od.order_details_id = o.order_details
+       JOIN branch_inventory bi ON o.order_id = bi.inventory_id
        JOIN branch b ON bi.branch_id = b.branch_id
        WHERE b.location = ?`,
       [location]
