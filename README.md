@@ -22,7 +22,7 @@ npm start
 
 
 You should have a .env file to store your database credentials, below are the credentials for the used database:
-DB_HOST=sql12.freesqldatabase.com
+DB_HOST=sql12.freesqldatabase.com\n
 DB_USER=sql12766530
 DB_PASSWORD=SE6DjZ3cMy
 DB_NAME=sql12766530
