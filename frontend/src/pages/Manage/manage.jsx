@@ -14,8 +14,8 @@ export default function Manage(){
             <div className="tabContainer">
                 <button className={`tab ${activeTab === "Tab 1" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 1")}>Suppliers</button>
                 <button className={`tab ${activeTab === "Tab 2" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 2")}>Clients</button>
-                <button className={`tab ${activeTab === "Tab 4" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 3")}>Products</button>
-                <button className={`tab ${activeTab === "Tab 5" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 4")}>Items</button>
+                <button className={`tab ${activeTab === "Tab 3" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 3")}>Products</button>
+                <button className={`tab ${activeTab === "Tab 4" ? "active" : "inactive"}`} onClick={() => setActiveTab("Tab 4")}>Items</button>
             </div>
             <div className="content">
                 {activeTab === "Tab 1" && <Suppliers/>}

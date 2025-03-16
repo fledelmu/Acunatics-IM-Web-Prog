@@ -5,13 +5,15 @@ import Select from 'react-select';
 import { processDelivery, fetchRecords } from '../../utils/api';
 
 export default function Delivery() {
-    const typeOptions = [{ value: "Client", label: "Client" }]; // Removed "Outlet"
+    const typeOptions = [
+        { value: "Client", label: "Client" }
+    ];
 
     const sizes = [
         { value: "S", label: "S" },
         { value: "M", label: "M" },
         { value: "L", label: "L" }
-    ];
+    ]
 
     const [selectedType, setSelectedType] = useState(null);
     const [records, setRecords] = useState([]);
@@ -25,22 +27,24 @@ export default function Delivery() {
     const [price, setPrice] = useState('');
 
     useEffect(() => {
+        let isMounted = true;
         async function loadDelivery() {
             try {
-                let table = await fetchRecords('delivery-records');
+                let table = await fetchRecords('delivery-records')
                 if (table.length > 0) {
-                    setColumns(Object.keys(table[0]));
-                    setRecords(table);
+                    setColumns(Object.keys(table[0]))
+                    setRecords(table)
                 }
             } catch (error) {
-                console.error("Error loading records:", error);
+                console.error("Error loading records:", error)
             }
         }
         loadDelivery();
+        return () => { isMounted = false; };
     }, []);
 
     const addDelivery = async () => {
-        if (!selectedType?.value || !target || !product || !quantity || !price) {
+        if (!selectedType.value || !target || !product || !quantity || !price) {
             alert("Please fill in all fields");
             return;
         }
@@ -48,7 +52,7 @@ export default function Delivery() {
         const data = {
             type: selectedType.value,
             target: target,
-            location: location, // Always include location for "Client"
+            location: selectedType.value === "Client" ? location : "", 
             product: product,
             quantity: Number(quantity),
             price: price,
@@ -57,7 +61,8 @@ export default function Delivery() {
 
         try {
             await processDelivery(data);
-            let table = await fetchRecords('delivery-records'); // Only fetch client records
+            let table = [];
+
 
             setColumns(table.length > 0 ? Object.keys(table[0]) : []);
             setRecords(table);
@@ -75,16 +80,18 @@ export default function Delivery() {
     };
 
     const handleRefresh = async () => {
+        let table
         try {
-            let table = await fetchRecords('delivery-records');
+            if (selectedType.value === "Client") {
+                table = await fetchRecords('delivery-records');
+            }
             setColumns(table.length > 0 ? Object.keys(table[0]) : []);
             setRecords(table);
         } catch (error) {
             console.error("Error in handleRefresh:", error);
             alert("An error occurred while refreshing records.");
         }
-    };
-
+    }
     return (
         <div className="content">
             <h2>Delivery Report</h2>
@@ -99,20 +106,19 @@ export default function Delivery() {
                     isClearable
                     placeholder="Select Type..."
                 />
-
-                <button className="input-button" onClick={handleRefresh}>Refresh</button>
-
                 <input
                     onChange={(e) => setTarget(e.target.value)}
                     value={target}
-                    placeholder="Client Name"
+                    placeholder={selectedType?.value === "Outlet" ? "Outlet" : "Client"}
                 />
 
-                <input
-                    onChange={(e) => setLocation(e.target.value)}
-                    value={location}
-                    placeholder="Enter location..."
-                />
+                {selectedType?.value === "Client" && (
+                    <input
+                        onChange={(e) => setLocation(e.target.value)}
+                        value={location}
+                        placeholder="Enter location..."
+                    />
+                )}
 
                 <input
                     onChange={(e) => setProduct(e.target.value)}
@@ -126,7 +132,7 @@ export default function Delivery() {
                     value={selectedSize}
                     onChange={setSelectedSize}
                     isClearable
-                    placeholder="Select Size..."
+                    placeholder="Select Type..."
                 />
 
                 <input

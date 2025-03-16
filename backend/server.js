@@ -453,11 +453,11 @@ app.put("/api/manage-edit-suppliers", async (req, res) => {
 
 app.post("/api/manage-add-product", async(req, res) => {
   const { name, size, price } = req.body
-
+  console.log("Received Data:", req.body)
   try{
     await db.query("START TRANSACTION")
 
-    await db.query("INSERT INTO Product_details (product_name, size, price) VALUES (?,?,?)", [name,size,price])
+    await db.query("INSERT INTO product_details (product_name, size, price) VALUES (?,?,?)", [name,size,price])
 
     await db.query("COMMIT")
     
@@ -473,6 +473,7 @@ app.get("/api/manage-get-product", async (req, res) =>{
     await db.query("START TRANSACTION")
 
     const [getProducts] = await db.query("SELECT * FROM Product_details")
+    console.log("Products:", getProducts)
     res.status(200).json(getProducts)
   } catch (error) {
     console.error("Error no products!", error)
@@ -897,6 +898,3 @@ app.get("/api/inventory-view-supply-inventory", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 })
-
-
-
