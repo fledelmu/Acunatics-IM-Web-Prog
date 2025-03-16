@@ -22,21 +22,22 @@ npm start
 
 
 You should have a .env file to store your database credentials, below are the credentials for the used database:
-DB_HOST=sql12.freesqldatabase.com\n
+```
+DB_HOST=sql12.freesqldatabase.com
 DB_USER=sql12766530
 DB_PASSWORD=SE6DjZ3cMy
 DB_NAME=sql12766530
 DB_PORT=3306
 PORT=5000
-
+```
 Unfortunately the database is free and it may be expired by the time you'll use it.
 To be able to use access the application and its features you can change the credentials to:
-
+```
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=porkybest
 DB_PORT=3306
 PORT=5000
-
-Also download xampp if you try to use local
+```
+Also download xampp if you try to use local and the sql file is found in the root directory
