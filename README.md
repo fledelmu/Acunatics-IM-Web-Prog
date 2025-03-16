@@ -35,7 +35,6 @@ To be able to use access the application and its features you can change the cre
 ```
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=
 DB_NAME=porkybest
 DB_PORT=3306
 PORT=5000
